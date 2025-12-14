@@ -1,0 +1,103 @@
+############################################
+# Visual Studio / .NET
+############################################
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS 2015+
+.vs/
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# MSBuild logs
+*.tlog
+*.log
+
+############################################
+# .NET Framework artifacts
+############################################
+
+# Generated files
+*.pdb
+*.exe
+*.dll
+*.cache
+*.resources
+
+# ClickOnce / publish
+publish/
+
+############################################
+# Designer / auto-generated
+############################################
+
+# WinForms designer generated files (keep .Designer.cs!)
+*.Designer.cs.cache
+
+############################################
+# NuGet
+############################################
+
+# NuGet packages (if using packages.config)
+packages/
+
+# NuGet v3 cache (global)
+.nuget/
+
+############################################
+# OS / IDE noise
+############################################
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+############################################
+# Logs / dumps
+############################################
+
+*.log
+*.dmp
+
+############################################
+# Temporary files
+############################################
+
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+
+############################################
+# Rider / ReSharper (если вдруг)
+############################################
+
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+############################################
+# OPTIONAL (если появятся)
+############################################
+
+# Installer outputs
+Setup/
+Installer/
+
+# Crash dumps
+crashlogs/
