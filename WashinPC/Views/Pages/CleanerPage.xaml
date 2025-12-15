@@ -1,0 +1,62 @@
+<UserControl x:Class="WashinPC.Views.Pages.CleanerPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:WashinPC.Controls"
+             MinHeight="400">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Очистка"
+                   FontSize="26"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,12"/>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,10">
+
+            <Button Content="Сканировать"
+                    Width="140"
+                    Margin="0,0,8,0"
+                    Click="Scan_Click"/>
+
+            <Button Content="Очистить"
+                    Width="140"
+                    Margin="0,0,8,0"
+                    Click="Clean_Click"/>
+
+            <Button Content="Очистить корзину"
+                    Width="180"
+                    Click="Recycle_Click"/>
+
+            <CheckBox x:Name="ChkAggressive"
+                      Content="Агрессивный режим"
+                      Margin="20,0,0,0"
+                      VerticalAlignment="Center"
+                      Checked="AggressiveChanged"
+                      Unchecked="AggressiveChanged"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2">
+            <ItemsControl x:Name="Cards">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <controls:CleanerCardControl/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <TextBlock x:Name="LblSummary"
+                   Grid.Row="3"
+                   Margin="0,10,0,0"
+                   FontWeight="SemiBold"/>
+    </Grid>
+</UserControl>
