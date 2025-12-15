@@ -1,0 +1,27 @@
+<UserControl x:Class="WashinPC.Controls.CleanerCardControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+
+    <Border Background="{DynamicResource PanelBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="12"
+            Margin="0,0,0,10">
+
+		<StackPanel>
+			<DockPanel Margin="0,0,0,6">
+				<CheckBox IsChecked="{Binding IsChecked}"/>
+				<TextBlock Text="{Binding Name}"
+                           Margin="8,0,0,0"
+                           FontWeight="SemiBold"/>
+			</DockPanel>
+
+            <TextBlock Text="{Binding SizeText}"
+           FontSize="12"
+           Opacity="0.7"/>
+
+        </StackPanel>
+	</Border>
+</UserControl>

@@ -1,0 +1,69 @@
+<Window x:Class="WashinPC.UI.Dialogs.AppDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:WashinPC.Localization"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+
+    <Border CornerRadius="10"
+            Padding="16"
+            Background="{DynamicResource PanelBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            Width="420">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="{Binding IconText}"
+                           FontSize="18"
+                           Margin="0,0,10,0"/>
+                <TextBlock Text="{Binding Title}"
+                           FontSize="15"
+                           FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <!-- Message -->
+            <TextBlock Grid.Row="1"
+                       Text="{Binding Message}"
+                       TextWrapping="Wrap"
+                       Opacity="0.9"
+                       Margin="0,0,0,14"/>
+
+            <!-- Buttons -->
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+
+                <!-- YES/NO -->
+                <StackPanel Orientation="Horizontal"
+                            Visibility="{Binding ShowYesNo, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Button Width="90"
+                            Margin="0,0,8,0"
+                            Content="{Binding Source={x:Static loc:Loc.BtnNo}, Path=Value}"
+                            Command="{Binding NoCommand}"/>
+
+                    <Button Width="90"
+                            Content="{Binding Source={x:Static loc:Loc.BtnYes}, Path=Value}"
+                            Command="{Binding YesCommand}"/>
+                </StackPanel>
+
+                <!-- OK -->
+                <Button Width="90"
+                        Content="{Binding Source={x:Static loc:Loc.BtnOk}, Path=Value}"
+                        Command="{Binding OkCommand}"
+                        Visibility="{Binding ShowOk, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

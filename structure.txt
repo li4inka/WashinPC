@@ -1,0 +1,59 @@
+﻿D:.
+|   .gitignore
+|   app.manifest
+|   App.xaml
+|   App.xaml.cs
+|   README.md
+|   structure.txt
+|   version.json
+|   washinpc.csproj
+|   washinpc.sln
+|
++---Assets
+|       WashinPC.ico
++---Controls
+|       CleanerCardControl.xaml
+|       CleanerCardControl.xaml.cs
+|
++---Core
+|       AppBootstrap.cs
+|       AppInfo.cs
+|       AppSettings.cs
+|
++---Engines
+|       Cleaner.cs
+|       Localizer.cs
+|       Native.cs
+|       PrivacyEngine.cs
+|       RegistryBackup.cs
+|       RegistryScanner.cs
+|       Utils.cs
+|
++---Localization
+|       Localization.cs
+|       LocalizedString.cs
++---Properties
+|       AssemblyInfo.cs
+|
++---Styles
+|       Controls.xaml
+|       Theme.Light.xaml
+|
++---UI
+|       UiEffects.cs
+|
+\---Views
+    |   MainWindow.xaml
+    |   MainWindow.xaml.cs
+    |
+    \---Pages
+            CleanerItemView.cs
+            CleanerPage.xaml
+            CleanerPage.xaml.cs
+            PrivacyPage.xaml
+            PrivacyPage.xaml.cs
+            RegistryIssueView.cs
+            RegistryPage.xaml
+            RegistryPage.xaml.cs
+            SettingsPage.xaml
+            SettingsPage.xaml.cs
