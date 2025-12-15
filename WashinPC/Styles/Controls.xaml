@@ -111,4 +111,9 @@
         </Setter>
     </Style>
 
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="10"/>
+        <Setter Property="Background" Value="#F0F0F0"/>
+    </Style>
+
 </ResourceDictionary>

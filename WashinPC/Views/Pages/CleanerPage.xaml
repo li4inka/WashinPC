@@ -45,7 +45,8 @@
         </StackPanel>
 
         <ScrollViewer Grid.Row="2">
-            <ItemsControl x:Name="Cards">
+            <ItemsControl x:Name="Cards"
+                          Margin="0,0,8,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <controls:CleanerCardControl/>
