@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using WashinPC.Core;
 using WashinPC.Views.Pages;
 
 namespace WashinPC
@@ -14,6 +15,8 @@ namespace WashinPC
 
             Sidebar.SelectedIndex = 0;
             LoadPage("Cleaner");
+
+            DataContext = new AppInfo();
         }
 
         private void Sidebar_SelectionChanged(object sender, SelectionChangedEventArgs e)

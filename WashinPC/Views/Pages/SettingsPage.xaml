@@ -20,13 +20,6 @@
         <!-- CONTENT -->
         <StackPanel Grid.Row="1">
 
-            <CheckBox x:Name="ChkDarkMode"
-                      Content="Тёмная тема"
-                      FontSize="14"
-                      Margin="0,0,0,10"
-                      Checked="DarkModeChanged"
-                      Unchecked="DarkModeChanged"/>
-
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Язык интерфейса:"
                            VerticalAlignment="Center"

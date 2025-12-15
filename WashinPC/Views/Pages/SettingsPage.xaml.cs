@@ -15,21 +15,10 @@ namespace WashinPC.Views.Pages
 
             _init = true;
 
-            // Theme
-            ChkDarkMode.IsChecked = AppSettings.DarkMode; // :contentReference[oaicite:1]{index=1}
-
             // Language
             CmbLanguage.SelectedIndex = (Localizer.Current == Lang.RU) ? 0 : 1; // :contentReference[oaicite:2]{index=2}
 
             _init = false;
-        }
-
-        private void DarkModeChanged(object sender, RoutedEventArgs e)
-        {
-            if (_init) return;
-
-            AppSettings.DarkMode = (ChkDarkMode.IsChecked == true); // :contentReference[oaicite:3]{index=3}
-            RestartApp();
         }
 
         private void LanguageChanged(object sender, SelectionChangedEventArgs e)

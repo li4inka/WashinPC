@@ -14,50 +14,98 @@
         </Grid.ColumnDefinitions>
 
         <!-- SIDEBAR -->
-        <!-- SIDEBAR -->
         <Border Grid.Column="0"
-        Background="{StaticResource PanelBrush}"
-        BorderBrush="{StaticResource BorderBrush}"
-        BorderThickness="0,0,1,0">
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,1,0">
 
-            <ListBox x:Name="Sidebar"
-         SelectionChanged="Sidebar_SelectionChanged"
-         Background="Transparent"
-         BorderThickness="0"
-         ItemContainerStyle="{StaticResource SidebarButtonStyle}">
+            <!-- ВАЖНО: ОДИН Child -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <ListBoxItem Tag="Cleaner">
-                    <StackPanel Orientation="Horizontal">
+                <!-- MENU -->
+                <ListBox x:Name="Sidebar"
+                         Grid.Row="0"
+                         SelectionChanged="Sidebar_SelectionChanged"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ItemContainerStyle="{StaticResource SidebarButtonStyle}">
+
+                    <ListBoxItem Tag="Cleaner">
                         <TextBlock Text="Очистка" FontSize="14"/>
-                    </StackPanel>
-                </ListBoxItem>
+                    </ListBoxItem>
 
-                <ListBoxItem Tag="Privacy">
-                    <StackPanel Orientation="Horizontal">
+                    <ListBoxItem Tag="Privacy">
                         <TextBlock Text="Приватность" FontSize="14"/>
-                    </StackPanel>
-                </ListBoxItem>
+                    </ListBoxItem>
 
-                <ListBoxItem Tag="Registry">
-                    <StackPanel Orientation="Horizontal">
+                    <ListBoxItem Tag="Registry">
                         <TextBlock Text="Реестр" FontSize="14"/>
-                    </StackPanel>
-                </ListBoxItem>
+                    </ListBoxItem>
 
-                <ListBoxItem Tag="Settings">
-                    <StackPanel Orientation="Horizontal">
+                    <ListBoxItem Tag="Settings">
                         <TextBlock Text="Настройки" FontSize="14"/>
+                    </ListBoxItem>
+
+                </ListBox>
+
+                <!-- FOOTER -->
+                <Border Grid.Row="1"
+                        Padding="12"
+                        BorderThickness="0,1,0,0"
+                        BorderBrush="{DynamicResource BorderBrush}">
+
+                    <StackPanel>
+
+                        <!-- APP NAME + BETA -->
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="WashinPC"
+                                       FontWeight="SemiBold"
+                                       FontSize="14"/>
+
+                            <Border Background="#589fe1"
+                                    CornerRadius="4"
+                                    Margin="8,0,0,0"
+                                    Padding="6,1">
+
+                                <TextBlock Text="BETA"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+
+                        </StackPanel>
+
+                        <!-- VERSION -->
+                        <TextBlock Margin="0,6,0,0"
+                                   FontSize="11"
+                                   Opacity="0.8"
+                                   Text="{Binding AppVersion}"/>
+
+                        <!-- BUILD -->
+                        <TextBlock FontSize="11"
+                                   Opacity="0.8"
+                                   Text="{Binding BuildInfo}"/>
+
+                        <!-- COPYRIGHT -->
+                        <TextBlock Margin="0,6,0,0"
+                                   FontSize="11"
+                                   Opacity="0.6"
+                                   Text="{Binding Copyright}"/>
+
                     </StackPanel>
-                </ListBoxItem>
-
-            </ListBox>
+                </Border>
+            </Grid>
         </Border>
-
 
         <!-- CONTENT -->
         <Border Grid.Column="1"
                 Padding="16"
-                Background="#F5F5F5">
+                Background="{DynamicResource WindowBrush}">
 
             <ContentControl x:Name="ContentHost"/>
         </Border>

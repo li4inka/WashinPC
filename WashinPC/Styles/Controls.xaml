@@ -3,54 +3,35 @@
 
     <!-- WINDOW -->
     <Style TargetType="Window">
-        <Setter Property="Background" Value="{StaticResource BgBrush}"/>
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
     </Style>
 
     <!-- BUTTON -->
     <Style TargetType="Button">
-        <Setter Property="Height" Value="36"/>
-        <Setter Property="Padding" Value="16,0"/>
-        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Padding" Value="18,10"/>
+        <Setter Property="MinHeight" Value="40"/>
         <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
 
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd"
-                        Background="{TemplateBinding Background}"
+                    <Border Background="{TemplateBinding Background}"
                         CornerRadius="8">
-
                         <ContentPresenter
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"/>
                     </Border>
-
-                    <ControlTemplate.Triggers>
-
-                        <!-- Hover -->
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd"
-                                Property="Background"
-                                Value="#5A9CFF"/>
-                        </Trigger>
-
-                        <!-- Disabled -->
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Bd"
-                                Property="Opacity"
-                                Value="0.5"/>
-                        </Trigger>
-
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
 
     <!-- LISTBOX (SIDEBAR) -->
     <Style TargetType="ListBox">
@@ -83,51 +64,46 @@
 
     <!-- SIDEBAR ITEM -->
     <!-- SIDEBAR BUTTON -->
-    <Style x:Key="SidebarButtonStyle" TargetType="ListBoxItem">
+    <Style x:Key="SidebarButtonStyle"
+       TargetType="ListBoxItem">
+
         <Setter Property="Height" Value="44"/>
-        <Setter Property="Padding" Value="14,0"/>
-        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Margin" Value="6"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         <Setter Property="Cursor" Value="Hand"/>
 
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="Root"
+                    <Border x:Name="Bd"
                         Background="{TemplateBinding Background}"
-                        CornerRadius="6"
-                        Margin="6,3">
+                        CornerRadius="8">
 
+                        <!--  -->
                         <ContentPresenter
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Stretch"/>
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
                     </Border>
 
                     <ControlTemplate.Triggers>
 
-                        <!-- SELECTED -->
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Root"
+                            <Setter TargetName="Bd"
                                 Property="Background"
                                 Value="{StaticResource AccentBrush}"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Foreground"
+                                Value="White"/>
                         </Trigger>
 
-                        <!-- HOVER (no selected) -->
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsMouseOver" Value="True"/>
-                                <Condition Property="IsSelected" Value="False"/>
-                            </MultiTrigger.Conditions>
-
-                            <Setter TargetName="Root"
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd"
                                 Property="Background"
-                                Value="{StaticResource PanelBrush}"/>
-                            <Setter Property="Foreground"
-                                Value="{StaticResource TextBrush}"/>
-                        </MultiTrigger>
+                                Value="#330078D4"/>
+                        </Trigger>
 
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

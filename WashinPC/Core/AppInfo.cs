@@ -1,16 +1,32 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
-namespace WashinPC.Core
+namespace WashinPC
 {
-    public static class AppInfo
+    public class AppInfo
     {
-        public static string Name => "WashinPC";
+        public string AppVersion { get; }
+        public string BuildInfo { get; }
+        public string Copyright { get; }
 
-        public static string Version =>
-            Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+        public AppInfo()
+        {
+            var asm = Assembly.GetExecutingAssembly();
+            var version = asm.GetName().Version;
 
-        public static string Channel => "Open Beta";
+            AppVersion = $"Версия: {version}";
 
-        public static string FullTitle => $"{Name} {Version} ({Channel})";
+#if DEBUG
+            var buildType = "DEBUG";
+#else
+            var buildType = "RELEASE";
+#endif
+
+            BuildInfo =
+                $"Сборка: {DateTime.Now:yyyy-MM-dd HH:mm} ({buildType})";
+
+            Copyright =
+                "© 2025 Kulich Software";
+        }
     }
 }
