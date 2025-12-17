@@ -1,5 +1,4 @@
-using System.Windows.Controls;
-using WashinPC.ViewModels.Pages;
+﻿using System.Windows.Controls;
 
 namespace WashinPC.Views.Pages
 {
@@ -8,7 +7,6 @@ namespace WashinPC.Views.Pages
         public PrivacyPage()
         {
             InitializeComponent();
-            DataContext = new PrivacyViewModel();
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using WashinPC.Localization;
 
-namespace WashinPC.ViewModels.Pages
+namespace WashinPC.ViewModels
 {
     public class SettingsViewModel : BaseViewModel
     {
@@ -15,7 +15,7 @@ namespace WashinPC.ViewModels.Pages
                 _languageIndex = value;
 
                 Localizer.Current = value == 0 ? Lang.RU : Lang.EN;
-                WashinPC.Localization.Loc.RefreshAll();
+                Loc.RefreshAll();
 
 
                 OnPropertyChanged();

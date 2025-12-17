@@ -1,168 +1,121 @@
 <Window x:Class="WashinPC.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:services="clr-namespace:WashinPC.Services"
         xmlns:loc="clr-namespace:WashinPC.Localization"
-        Title="{Binding Source={x:Static loc:Loc.AppTitle}, Path=Value}"
-        Width="1100"
-        Height="700"
+        Title="{Binding AppInfo.Version, StringFormat=WashinPC {0}}"
+        Width="1200"
+        Height="640"
+        MinWidth="1200"
+        MinHeight="640"
+        Background="{StaticResource Brush.AppBackground}"
         WindowStartupLocation="CenterScreen">
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <!-- OUTER AIR -->
+    <Grid Margin="20">
 
-        <!-- SIDEBAR -->
-        <Border Grid.Column="0"
-                Background="{StaticResource PanelBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="0,0,1,0">
+        <!-- OUTER ROUNDED CONTAINER -->
+        <Border Style="{StaticResource AppContainer}">
 
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <!-- INNER CONTAINER (correct clipping) -->
+            <Border Margin="1"
+                    Background="White"
+                    CornerRadius="10"
+                    ClipToBounds="True">
 
-                <!-- MENU -->
-                <ListBox x:Name="Sidebar"
-                         Grid.Row="0"
-                         SelectionChanged="Sidebar_SelectionChanged"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ItemContainerStyle="{StaticResource SidebarButtonStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                    <ListBoxItem Tag="Cleaner">
-                        <TextBlock FontSize="14"
-                                   Text="{Binding Source={x:Static loc:Loc.TabCleaner}, Path=Value}"/>
-                    </ListBoxItem>
+                    <!-- HEADER -->
+                    <DockPanel Margin="14,10">
 
-                    <ListBoxItem Tag="Privacy">
-                        <TextBlock FontSize="14"
-                                   Text="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}"/>
-                    </ListBoxItem>
+                        <!-- BRAND -->
+                        <StackPanel Orientation="Horizontal"
+                                    DockPanel.Dock="Left">
 
-                    <ListBoxItem Tag="Registry">
-                        <TextBlock FontSize="14"
-                                   Text="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}"/>
-                    </ListBoxItem>
+                            <TextBlock Text="{Binding AppInfo.ProductName}"
+                                       FontSize="15"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"/>
 
-                    <ListBoxItem Tag="Settings">
-                        <TextBlock FontSize="14"
-                                   Text="{Binding Source={x:Static loc:Loc.TabSettings}, Path=Value}"/>
-                    </ListBoxItem>
-
-                </ListBox>
-
-                <!-- FOOTER -->
-                <Border Grid.Row="1"
-                        Padding="12"
-                        BorderThickness="0,1,0,0"
-                        BorderBrush="{DynamicResource BorderBrush}">
-
-                    <StackPanel>
-
-                        <!-- APP NAME + BETA -->
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="WashinPC"
-                                       FontWeight="SemiBold"
-                                       FontSize="14"/>
-
-                            <Border Background="#589fe1"
-                                    CornerRadius="4"
-                                    Margin="8,0,0,0"
-                                    Padding="6,1">
-                                <TextBlock Text="BETA"
-                                           FontSize="10"
-                                           FontWeight="SemiBold"
-                                           Foreground="White"/>
+                            <Border Style="{StaticResource ChannelBadge}">
+                                <TextBlock Text="{Binding AppInfo.Channel}"
+                                           Style="{StaticResource ChannelBadgeText}"/>
                             </Border>
                         </StackPanel>
+                    </DockPanel>
 
-                        <!-- VERSION -->
-                        <TextBlock Margin="0,6,0,0"
-           FontSize="11"
-           Opacity="0.8">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="{}{0}{1}">
-                                    <Binding Source="{x:Static loc:Loc.VersionLabel}" Path="Value"/>
-                                    <Binding Path="Version"/>
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
+                    <!-- HEADER SEPARATOR -->
+                    <Border Grid.Row="1"
+                            Background="{StaticResource Brush.Border}"/>
 
+                    <!-- BODY -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="210"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
+                        <!-- SIDEBAR -->
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- BUILD -->
-                        <TextBlock FontSize="11"
-                                   Opacity="0.8">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0}{1}">
-                                        <Binding Source="{x:Static loc:Loc.BuildLabel}" Path="Value"/>
-                                        <Binding Path="Build"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                        </TextBlock>
+                            <!-- NAV -->
+                            <ListBox x:Name="Sidebar"
+                                     Grid.Row="0"
+                                     Style="{StaticResource SidebarList}"
+                                     ItemContainerStyle="{StaticResource SidebarItem}"
+                                     SelectionChanged="Sidebar_SelectionChanged">
 
+                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabCleaner}, Path=Value}"
+                                             Tag="Cleaner"/>
+                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}"
+                                             Tag="Privacy"/>
+                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}"
+                                             Tag="Registry"/>
+                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabSettings}, Path=Value}"
+                                             Tag="Settings"/>
+                            </ListBox>
 
-                        <!-- COPYRIGHT -->
-                        <TextBlock Margin="0,6,0,0"
-                                   FontSize="11"
-                                   Opacity="0.6"
-                                   Text="{Binding Source={x:Static loc:Loc.Copyright}, Path=Value}"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </Border>
+                            <!-- SIDEBAR INFO (BOTTOM) -->
+                            <StackPanel Grid.Row="1"
+                                        Margin="14,10"
+                                        VerticalAlignment="Bottom"
+                                        Opacity="0.75">
 
-        <!-- CONTENT -->
-        <Border Grid.Column="1"
-                Padding="16"
-                Background="{DynamicResource WindowBrush}">
+                                <TextBlock Text="{Binding AppInfo.Version}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource Brush.TextMuted}"/>
 
-            <DockPanel LastChildFill="True">
+                                <TextBlock Text="{Binding AppInfo.Build}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource Brush.TextMuted}"/>
 
-                <!-- STATUS BAR -->
-                <Border DockPanel.Dock="Bottom"
-                        Margin="0,12,0,0"
-                        Padding="10,6"
-                        CornerRadius="6"
-                        Background="{DynamicResource PanelBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1">
+                                <TextBlock Text="{Binding AppInfo.Company}"
+                                           Margin="0,6,0,0"
+                                           FontSize="11"
+                                           Foreground="{StaticResource Brush.TextMuted}"/>
+                            </StackPanel>
+                        </Grid>
 
-                    <TextBlock FontSize="12"
-                               Opacity="0.85"
-                               Text="{Binding Source={x:Static services:AppUiState.Instance},
-                                              Path=StatusText}"/>
-                </Border>
+                        <!-- SIDEBAR SEPARATOR -->
+                        <Border Grid.Column="1"
+                                Background="{StaticResource Brush.Border}"/>
 
-                <!-- CONTENT + OVERLAY -->
-                <Grid>
-                    <ContentControl x:Name="ContentHost"/>
-
-                    <Border Background="#AA000000"
-                            CornerRadius="8"
-                            Visibility="{Binding Source={x:Static services:AppUiState.Instance},
-                                                 Path=IsBusy,
-                                                 Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel HorizontalAlignment="Center"
-                                    VerticalAlignment="Center">
-                            <ProgressBar Width="220"
-                                         Height="6"
-                                         IsIndeterminate="True"/>
-                            <TextBlock Margin="0,10,0,0"
-                                       Foreground="White"
-                                       FontSize="13"
-                                       Text="{Binding Source={x:Static services:AppUiState.Instance},
-                                                      Path=BusyText}"/>
-                        </StackPanel>
-                    </Border>
+                        <!-- CONTENT -->
+                        <ContentControl x:Name="ContentHost"
+                                        Grid.Column="2"/>
+                    </Grid>
                 </Grid>
 
-            </DockPanel>
+            </Border>
         </Border>
     </Grid>
 </Window>

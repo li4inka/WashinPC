@@ -1,6 +1,4 @@
-using System.Windows.Controls;
-using WashinPC.ViewModels.Pages;
-using WashinPC.Services;
+﻿using System.Windows.Controls;
 
 namespace WashinPC.Views.Pages
 {
@@ -9,11 +7,6 @@ namespace WashinPC.Views.Pages
         public SettingsPage()
         {
             InitializeComponent();
-            DataContext = new SettingsViewModel();
-
-            AppUiState.Instance.StatusText = string.Empty;
-            AppUiState.Instance.BusyText = string.Empty;
-            AppUiState.Instance.IsBusy = false;
         }
     }
 }

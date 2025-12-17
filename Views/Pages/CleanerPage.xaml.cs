@@ -1,5 +1,4 @@
 ﻿using System.Windows.Controls;
-using WashinPC.ViewModels.Pages;
 
 namespace WashinPC.Views.Pages
 {
@@ -8,7 +7,6 @@ namespace WashinPC.Views.Pages
         public CleanerPage()
         {
             InitializeComponent();
-            DataContext = new CleanerViewModel();
         }
     }
 }

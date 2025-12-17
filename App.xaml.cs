@@ -25,8 +25,7 @@ namespace WashinPC
                 return;
             }
 
-            Localizer.AutoDetectLanguage();
-            WashinPC.Localization.Loc.RefreshAll();
+            Localizer.Initialize();
 
             var win = new MainWindow();
             MainWindow = win;

@@ -1,105 +1,89 @@
 <UserControl x:Class="WashinPC.Views.Pages.RegistryPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:WashinPC.Localization"
-             MinHeight="400">
+             xmlns:loc="clr-namespace:WashinPC.Localization">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid Margin="14">
+        <!-- ONE CARD FOR GRID + BOTTOM BAR -->
+        <Border Style="{StaticResource ContentCard}">
 
-        <!-- TITLE -->
-        <TextBlock Grid.Row="0"
-                   Text="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}"
-                   FontSize="26"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,12"/>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <!-- ACTIONS -->
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal"
-                    Margin="0,0,0,10">
+                <!-- TABLE -->
+                <DataGrid Grid.Row="0"
+                          ItemsSource="{Binding Items}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          HeadersVisibility="Column"
+                          BorderThickness="0"
+                          GridLinesVisibility="Horizontal">
 
-            <Button Width="140"
-                    Margin="0,0,8,0"
-                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
-                    Command="{Binding ScanCommand}"/>
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Width="40"
+                                                Binding="{Binding IsSelected}"/>
 
-            <Button Width="140"
-                    Content="{Binding Source={x:Static loc:Loc.BtnFix}, Path=Value}"
-                    Command="{Binding FixCommand}"/>
+                        <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColCategory}, Path=Value}"
+                                            Binding="{Binding Category}"
+                                            Width="*"/>
 
-            <CheckBox Content="{Binding Source={x:Static loc:Loc.ChkBackup}, Path=Value}"/>
-        </StackPanel>
+                        <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColKey}, Path=Value}"
+                                            Binding="{Binding KeyPath}"
+                                            Width="2*"/>
 
-        <!-- LIST -->
-        <ListView Grid.Row="2"
-                  ItemsSource="{Binding Items}"
-                  FontSize="13"
-                  BorderThickness="1"
-                  BorderBrush="{DynamicResource BorderBrush}">
+                        <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColDetails}, Path=Value}"
+                                            Binding="{Binding Details}"
+                                            Width="2*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
 
-            <ListView.View>
-                <GridView>
+                <!-- BOTTOM BAR -->
+                <Border Grid.Row="1"
+                        Background="{StaticResource Brush.BottomBarBg}"
+                        BorderBrush="{StaticResource Brush.Border}"
+                        BorderThickness="0,1,0,0"
+                        Padding="10,8">
 
-                    <GridViewColumn Header="✓" Width="40">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected}"
-                                          HorizontalAlignment="Center"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                        <GridViewColumn Width="180">
-                            <GridViewColumn.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Source={x:Static loc:Loc.ColCategory}, Path=Value}"/>
-                                </DataTemplate>
-                            </GridViewColumn.HeaderTemplate>
+                        <!-- BUTTONS -->
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
 
-                            <GridViewColumn.DisplayMemberBinding>
-                                <Binding Path="Category"/>
-                            </GridViewColumn.DisplayMemberBinding>
-                        </GridViewColumn>
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
+                                    Command="{Binding ScanCommand}"/>
 
-                        <GridViewColumn Width="320">
-                            <GridViewColumn.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Source={x:Static loc:Loc.ColKey}, Path=Value}"/>
-                                </DataTemplate>
-                            </GridViewColumn.HeaderTemplate>
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="{Binding Source={x:Static loc:Loc.BtnFix}, Path=Value}"
+                                    Command="{Binding FixCommand}"/>
+                        </StackPanel>
 
-                            <GridViewColumn.DisplayMemberBinding>
-                                <Binding Path="KeyPath"/>
-                            </GridViewColumn.DisplayMemberBinding>
-                        </GridViewColumn>
+                        <!-- OPTION -->
+                        <CheckBox Grid.Column="1"
+                                  Content="{Binding Source={x:Static loc:Loc.ChkBackup}, Path=Value}"
+                                  IsChecked="{Binding CreateBackup}"
+                                  Margin="20,0,0,0"
+                                  VerticalAlignment="Center"/>
 
-                        <GridViewColumn Width="260">
-                            <GridViewColumn.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Source={x:Static loc:Loc.ColDetails}, Path=Value}"/>
-                                </DataTemplate>
-                            </GridViewColumn.HeaderTemplate>
-
-                            <GridViewColumn.DisplayMemberBinding>
-                                <Binding Path="Details"/>
-                            </GridViewColumn.DisplayMemberBinding>
-                        </GridViewColumn>
-
-
-                </GridView>
-            </ListView.View>
-        </ListView>
-
-        <!-- SUMMARY -->
-        <TextBlock Grid.Row="3"
-                   Margin="0,10,0,0"
-                   FontWeight="SemiBold"
-                   Text="{Binding SummaryText}"/>
+                        <!-- SUMMARY -->
+                        <TextBlock Grid.Column="3"
+                                   Text="{Binding SummaryText}"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource Brush.TextMuted}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

@@ -4,7 +4,8 @@ namespace WashinPC.UI.Dialogs
 {
     public partial class AppDialog : Window
     {
-        public DialogResult Result => ((DialogViewModel)DataContext).Result;
+        public DialogResult Result =>
+            ((DialogViewModel)DataContext).Result;
 
         public AppDialog(string title, string message, DialogType type)
         {

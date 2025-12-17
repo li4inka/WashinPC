@@ -4,8 +4,19 @@
 
     <Application.Resources>
         <ResourceDictionary>
+
+            <!-- ================= CONVERTERS ================= -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
+            <!-- ================= FALLBACK BRUSHES ================= -->
+            <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#DDDDDD"/>
+
+            <SolidColorBrush x:Key="Brush.TextMuted" Color="#777777"/>
+            <SolidColorBrush x:Key="Brush.BottomBarBg" Color="#F5F5F5"/>
+            <SolidColorBrush x:Key="Brush.Border" Color="#DDDDDD"/>
+
+            <!-- ================= THEMES ================= -->
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Styles/Theme.Light.xaml"/>
                 <ResourceDictionary Source="Styles/Controls.xaml"/>
@@ -13,5 +24,4 @@
 
         </ResourceDictionary>
     </Application.Resources>
-
 </Application>

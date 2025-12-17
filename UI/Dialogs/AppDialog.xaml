@@ -9,12 +9,13 @@
         AllowsTransparency="True"
         Background="Transparent">
 
+    <!-- SHADOW / CARD -->
     <Border CornerRadius="10"
             Padding="16"
+            Width="420"
             Background="{DynamicResource PanelBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="1"
-            Width="420">
+            BorderThickness="1">
 
         <Grid>
             <Grid.RowDefinitions>
@@ -23,47 +24,56 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Header -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <!-- HEADER -->
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,0,0,12">
                 <TextBlock Text="{Binding IconText}"
                            FontSize="18"
                            Margin="0,0,10,0"/>
+
                 <TextBlock Text="{Binding Title}"
                            FontSize="15"
                            FontWeight="SemiBold"/>
             </StackPanel>
 
-            <!-- Message -->
+            <!-- MESSAGE -->
             <TextBlock Grid.Row="1"
                        Text="{Binding Message}"
                        TextWrapping="Wrap"
-                       Opacity="0.9"
-                       Margin="0,0,0,14"/>
+                       Opacity="0.85"
+                       Margin="0,0,0,18"/>
 
-            <!-- Buttons -->
+            <!-- BUTTONS -->
             <StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right">
 
-                <!-- YES/NO -->
+                <!-- YES / NO -->
                 <StackPanel Orientation="Horizontal"
-                            Visibility="{Binding ShowYesNo, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            Visibility="{Binding ShowYesNo,
+                                Converter={StaticResource BooleanToVisibilityConverter}}">
+
                     <Button Width="90"
                             Margin="0,0,8,0"
+                            Style="{StaticResource PrimaryButton}"
                             Content="{Binding Source={x:Static loc:Loc.BtnNo}, Path=Value}"
                             Command="{Binding NoCommand}"/>
 
                     <Button Width="90"
+                            Style="{StaticResource PrimaryButton}"
                             Content="{Binding Source={x:Static loc:Loc.BtnYes}, Path=Value}"
                             Command="{Binding YesCommand}"/>
                 </StackPanel>
 
                 <!-- OK -->
                 <Button Width="90"
+                        Style="{StaticResource PrimaryButton}"
                         Content="{Binding Source={x:Static loc:Loc.BtnOk}, Path=Value}"
                         Command="{Binding OkCommand}"
-                        Visibility="{Binding ShowOk, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        Visibility="{Binding ShowOk,
+                            Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
+
         </Grid>
     </Border>
 </Window>

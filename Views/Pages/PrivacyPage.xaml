@@ -1,91 +1,76 @@
 <UserControl x:Class="WashinPC.Views.Pages.PrivacyPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:WashinPC.Localization"
-             MinHeight="400">
+             xmlns:loc="clr-namespace:WashinPC.Localization">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid Margin="14">
+        <Border Style="{StaticResource ContentCard}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <!-- TITLE -->
-        <TextBlock Grid.Row="0"
-                   Text="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}"
-                   FontSize="26"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,12"/>
+                <!-- LIST -->
+                <ListView Grid.Row="0"
+                          ItemsSource="{Binding Items}"
+                          BorderThickness="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="8,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-        <!-- ACTIONS -->
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal"
-                    Margin="0,0,0,10">
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IsChecked}"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+           VerticalAlignment="Center">
+    <Run Text="{Binding Name}" />
+    <Run Text=" " />
+    <Run Text="{Binding SizeText, Mode=OneWay}"
+         Foreground="{StaticResource Brush.TextMuted}" />
+                                </TextBlock>
 
-            <Button Width="140"
-                    Margin="0,0,8,0"
-                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
-                    Command="{Binding ScanCommand}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
 
-            <Button Width="140"
-                    Content="{Binding Source={x:Static loc:Loc.BtnClean}, Path=Value}"
-                    Command="{Binding CleanCommand}"/>
-        </StackPanel>
+                <!-- BOTTOM BAR -->
+                <Border Grid.Row="1"
+                        Background="{StaticResource Brush.BottomBarBg}"
+                        BorderBrush="{StaticResource Brush.Border}"
+                        BorderThickness="0,1,0,0"
+                        Padding="10,8">
 
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-        <!-- LIST -->
-        <ListView Grid.Row="2"
-                  ItemsSource="{Binding Items}"
-                  FontSize="13"
-                  BorderThickness="1"
-                  BorderBrush="{DynamicResource BorderBrush}">
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal">
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
+                                    Command="{Binding ScanCommand}"/>
 
-            <ListView.View>
-                <GridView>
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="{Binding Source={x:Static loc:Loc.BtnClean}, Path=Value}"
+                                    Command="{Binding CleanCommand}"/>
+                        </StackPanel>
 
-                    <GridViewColumn Header="✓" Width="40">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsChecked}"
-                                          HorizontalAlignment="Center"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-
-                        <GridViewColumn Width="260">
-                            <GridViewColumn.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Source={x:Static loc:Loc.ColSource}, Path=Value}"/>
-                                </DataTemplate>
-                            </GridViewColumn.HeaderTemplate>
-
-                            <GridViewColumn.DisplayMemberBinding>
-                                <Binding Path="Name"/>
-                            </GridViewColumn.DisplayMemberBinding>
-                        </GridViewColumn>
-
-                        <GridViewColumn Width="140">
-                            <GridViewColumn.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Source={x:Static loc:Loc.ColSize}, Path=Value}"/>
-                                </DataTemplate>
-                            </GridViewColumn.HeaderTemplate>
-
-                            <GridViewColumn.DisplayMemberBinding>
-                                <Binding Path="SizeText"/>
-                            </GridViewColumn.DisplayMemberBinding>
-                        </GridViewColumn>
-
-                </GridView>
-            </ListView.View>
-        </ListView>
-
-        <!-- SUMMARY -->
-        <TextBlock Grid.Row="3"
-                   Margin="0,10,0,0"
-                   FontWeight="SemiBold"
-                   Text="{Binding SummaryText}"/>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding SummaryText}"
+                                   Foreground="{StaticResource Brush.TextMuted}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

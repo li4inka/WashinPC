@@ -6,12 +6,19 @@ namespace WashinPC.Core
 {
     public class AppInfo
     {
+        public string ProductName { get; }
         public string Version { get; }
         public string Build { get; }
         public int Year { get; }
+        public string Company { get; }
+        public string Channel { get; }
+        public bool IsBeta { get; }
 
         public AppInfo()
         {
+            ProductName = "WashinPC";
+            Company = "© Kulich Software";
+
             var asm = Assembly.GetExecutingAssembly();
 
             var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
@@ -21,6 +28,14 @@ namespace WashinPC.Core
 
             Build = GetBuildTime(asm).ToString("yyyy-MM-dd HH:mm");
             Year = DateTime.Now.Year;
+
+#if DEBUG
+            IsBeta = true;
+            Channel = "BETA";
+#else
+            IsBeta = false;
+            Channel = "RELEASE";
+#endif
         }
 
         private static DateTime GetBuildTime(Assembly asm)

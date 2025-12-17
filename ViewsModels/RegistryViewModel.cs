@@ -7,21 +7,33 @@ using WashinPC.Services;
 using WashinPC.UI;
 using WashinPC.UI.Dialogs;
 
-namespace WashinPC.ViewModels.Pages
+namespace WashinPC.ViewModels
 {
     public class RegistryViewModel : BaseViewModel
     {
         private readonly RegistryScanner _scanner = new RegistryScanner();
 
-        // ===================== DATA =====================
+        public class Issue
+        {
+            public bool IsSelected { get; set; }
+            public string Category { get; set; }
+            public string KeyPath { get; set; }
+            public string ValueName { get; set; }
+            public string Details { get; set; }
+            public RegistryIssue Source { get; set; }
 
-        public ObservableCollection<RegistryIssueView> Items { get; } =
-            new ObservableCollection<RegistryIssueView>();
+            public Issue()
+            {
+                IsSelected = true;
+            }
+        }
+
+        public ObservableCollection<Issue> Items { get; private set; }
 
         private string _summaryText = "Найдено записей: 0";
         public string SummaryText
         {
-            get => _summaryText;
+            get { return _summaryText; }
             private set
             {
                 _summaryText = value;
@@ -29,43 +41,30 @@ namespace WashinPC.ViewModels.Pages
             }
         }
 
-        private bool _createBackup = true;
-        public bool CreateBackup
-        {
-            get => _createBackup;
-            set
-            {
-                if (_createBackup == value) return;
-                _createBackup = value;
-                OnPropertyChanged();
-            }
-        }
+        public bool CreateBackup { get; set; }
 
-        // ===================== COMMANDS =====================
-
-        public ICommand ScanCommand { get; }
-        public ICommand FixCommand { get; }
-
-        // ===================== CTOR =====================
+        public ICommand ScanCommand { get; private set; }
+        public ICommand FixCommand { get; private set; }
 
         public RegistryViewModel()
         {
+            Items = new ObservableCollection<Issue>();
+            CreateBackup = true;
+
             ScanCommand = new RelayCommand(
                 async () => await ScanAsync(),
                 () => !IsBusy);
 
             FixCommand = new RelayCommand(
-                () => Fix(),
+                Fix,
                 () => !IsBusy && Items.Any(i => i.IsSelected));
         }
 
         protected override void OnBusyChanged()
         {
-            (ScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (ScanCommand as RelayCommand).RaiseCanExecuteChanged();
+            (FixCommand as RelayCommand).RaiseCanExecuteChanged();
         }
-
-        // ===================== LOGIC =====================
 
         private async Task ScanAsync()
         {
@@ -81,9 +80,8 @@ namespace WashinPC.ViewModels.Pages
 
                 foreach (var i in issues)
                 {
-                    Items.Add(new RegistryIssueView
+                    Items.Add(new Issue
                     {
-                        IsSelected = true,
                         Category = i.Category,
                         KeyPath = i.KeyPath,
                         ValueName = i.ValueName,
@@ -92,8 +90,8 @@ namespace WashinPC.ViewModels.Pages
                     });
                 }
 
-                SummaryText = $"Найдено записей: {Items.Count}";
-                SetStatus($"Найдено проблем реестра: {Items.Count}");
+                SummaryText = string.Format("Найдено записей: {0}", Items.Count);
+                SetStatus(string.Format("Найдено проблем реестра: {0}", Items.Count));
             }
             finally
             {
@@ -124,7 +122,6 @@ namespace WashinPC.ViewModels.Pages
                 SetStatus("Применение исправлений…");
                 IsBusy = true;
 
-                // ===== BACKUP =====
                 if (CreateBackup)
                 {
                     try
@@ -135,7 +132,7 @@ namespace WashinPC.ViewModels.Pages
                     catch
                     {
                         DialogService.ShowWarning(
-                            "Не удалось создать резервную копию реестра. Исправление будет продолжено.");
+                            "Не удалось создать резервную копию реестра.");
                     }
                 }
 
@@ -145,24 +142,21 @@ namespace WashinPC.ViewModels.Pages
                 {
                     try
                     {
-                        var result = item.Source.Fix?.Invoke(false);
-                        if (result == RegistryFixResult.Fixed)
+                        if (item.Source.Fix != null &&
+                            item.Source.Fix(false) == RegistryFixResult.Fixed)
                             fixedCount++;
                     }
-                    catch
-                    {
-                        // как CCleaner — просто идём дальше
-                    }
+                    catch { }
                 }
 
-                SetStatus($"Исправлено проблем реестра: {fixedCount}");
+                SetStatus(string.Format("Исправлено проблем реестра: {0}", fixedCount));
             }
             finally
             {
                 IsBusy = false;
             }
 
-            _ = ScanAsync();
+            ScanAsync();
         }
     }
 }

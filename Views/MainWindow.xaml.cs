@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using WashinPC.Services;
-using WashinPC.Core;
+using WashinPC.ViewModels;
 
 namespace WashinPC
 {
@@ -12,14 +12,12 @@ namespace WashinPC
         {
             InitializeComponent();
 
-            DataContext = new AppInfo();
-
+            DataContext = new MainViewModel();
             Loaded += MainWindow_Loaded;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // гарантированно НЕ null
             NavigationService.Initialize(ContentHost);
 
             Sidebar.SelectedIndex = 0;
