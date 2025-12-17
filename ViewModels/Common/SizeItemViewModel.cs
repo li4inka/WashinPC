@@ -1,5 +1,4 @@
 ﻿using WashinPC.Core;
-using WashinPC.ViewModels;
 
 namespace WashinPC.ViewModels.Common
 {
@@ -8,10 +7,20 @@ namespace WashinPC.ViewModels.Common
     /// </summary>
     public abstract class SizeItemViewModel : BaseViewModel
     {
+        private string _name;
         private long _totalBytes;
         private bool _isChecked = true;
 
-        public string Name { get; set; }
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name == value) return;
+                _name = value;
+                OnPropertyChanged();
+            }
+        }
 
         public bool IsChecked
         {

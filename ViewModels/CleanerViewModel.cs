@@ -1,63 +1,29 @@
 ﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using WashinPC.Core;
 using WashinPC.Engines.Cleaner;
 using WashinPC.Services;
 using WashinPC.UI;
 using WashinPC.UI.Dialogs;
+using WashinPC.ViewModels.Common;
 
 namespace WashinPC.ViewModels
 {
-    public class CleanerItemView : INotifyPropertyChanged
+    public class CleanerItemView : SizeItemViewModel
     {
-        private string _name;
         private int _fileCount;
-        private long _totalBytes;
-        private bool _isChecked = true;
-
-        public string Name
-        {
-            get => _name;
-            set { _name = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayText)); }
-        }
 
         public int FileCount
         {
             get => _fileCount;
-            set { _fileCount = value; OnPropertyChanged(); }
-        }
-
-        public long TotalBytes
-        {
-            get => _totalBytes;
             set
             {
-                if (_totalBytes == value) return;
-                _totalBytes = value;
+                if (_fileCount == value) return;
+                _fileCount = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(SizeText));
-                OnPropertyChanged(nameof(DisplayText));
             }
         }
-
-        public bool IsChecked
-        {
-            get => _isChecked;
-            set { _isChecked = value; OnPropertyChanged(); }
-        }
-
-        public string SizeText =>
-            FileSizeFormatter.Format(TotalBytes);
-
-        public string DisplayText =>
-            $"{Name} — {SizeText}";
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string prop = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
     }
 
     public class CleanerViewModel : BaseViewModel
@@ -71,7 +37,12 @@ namespace WashinPC.ViewModels
         public string SummaryText
         {
             get => _summaryText;
-            set { _summaryText = value; OnPropertyChanged(); }
+            set
+            {
+                if (_summaryText == value) return;
+                _summaryText = value;
+                OnPropertyChanged();
+            }
         }
 
         public bool AggressiveMode
@@ -79,6 +50,7 @@ namespace WashinPC.ViewModels
             get => _engine.AggressiveMode;
             set
             {
+                if (_engine.AggressiveMode == value) return;
                 _engine.AggressiveMode = value;
                 _engine.InitRules();
                 OnPropertyChanged();
@@ -102,7 +74,7 @@ namespace WashinPC.ViewModels
                 () => !IsBusy && Items.Any(i => i.IsChecked));
 
             RecycleCommand = new RelayCommand(
-                () => EmptyRecycleBin(),
+                EmptyRecycleBin,
                 () => !IsBusy);
         }
 
@@ -130,6 +102,7 @@ namespace WashinPC.ViewModels
 
                 var groups = await Task.Run(() =>
                     _engine.ScanDetailed(out totalFiles, out totalBytes));
+
 
                 foreach (var g in groups)
                 {
@@ -168,6 +141,7 @@ namespace WashinPC.ViewModels
                 int deleted = 0;
                 await Task.Run(() => _engine.Clean(out deleted));
 
+
                 Items.Clear();
                 SummaryText = "Файлов: 0, Размер: 0 MB";
 
@@ -181,14 +155,12 @@ namespace WashinPC.ViewModels
 
         private void EmptyRecycleBin()
         {
-            // 1️⃣ Корзина пуста — сразу выходим
             if (Native.IsRecycleBinEmpty())
             {
                 DialogService.ShowInfo("Корзина уже пуста.");
                 return;
             }
 
-            // 2️⃣ Подтверждение
             if (DialogService.ShowConfirm(
                     "Очистить корзину?\nВсе файлы будут удалены без возможности восстановления.")
                 != DialogResult.Yes)
@@ -200,9 +172,7 @@ namespace WashinPC.ViewModels
                 SetStatus("Удаление файлов из корзины…");
                 IsBusy = true;
 
-                bool result = Native.EmptyRecycleBinQuiet();
-
-                if (!result)
+                if (!Native.EmptyRecycleBinQuiet())
                 {
                     DialogService.ShowWarning(
                         "Не удалось очистить корзину.\nПопробуйте запустить программу от имени администратора.");

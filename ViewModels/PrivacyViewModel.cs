@@ -1,32 +1,16 @@
 ﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Windows;
 using WashinPC.Core;
 using WashinPC.Engines.Privacy;
 using WashinPC.UI;
+using WashinPC.ViewModels.Common;
 
 namespace WashinPC.ViewModels
 {
-    public class PrivacyItemView : INotifyPropertyChanged
+    public class PrivacyItemView : SizeItemViewModel
     {
-        private string _name;
         private int _fileCount;
-        private long _totalBytes;
-        private bool _isChecked = true;
-
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                if (_name == value) return;
-                _name = value;
-                OnPropertyChanged();
-            }
-        }
 
         public int FileCount
         {
@@ -38,36 +22,6 @@ namespace WashinPC.ViewModels
                 OnPropertyChanged();
             }
         }
-
-        public long TotalBytes
-        {
-            get => _totalBytes;
-            set
-            {
-                if (_totalBytes == value) return;
-                _totalBytes = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(SizeText));
-            }
-        }
-
-        public bool IsChecked
-        {
-            get => _isChecked;
-            set
-            {
-                if (_isChecked == value) return;
-                _isChecked = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string SizeText =>
-            FileSizeFormatter.Format(TotalBytes);
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string prop = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
     }
 
     public class PrivacyViewModel : BaseViewModel
@@ -89,13 +43,36 @@ namespace WashinPC.ViewModels
             }
         }
 
-        public RelayCommand ScanCommand => new RelayCommand(async () => await ScanAsync());
-        public RelayCommand CleanCommand => new RelayCommand(async () => await CleanAsync());
+        public RelayCommand ScanCommand { get; }
+        public RelayCommand CleanCommand { get; }
+
+        public PrivacyViewModel()
+        {
+            ScanCommand = new RelayCommand(
+                async () => await ScanAsync(),
+                () => !IsBusy);
+
+            CleanCommand = new RelayCommand(
+                async () => await CleanAsync(),
+                () => !IsBusy && Items.Any(i => i.IsChecked));
+        }
+
+        protected override void OnBusyChanged()
+        {
+            ScanCommand.RaiseCanExecuteChanged();
+            CleanCommand.RaiseCanExecuteChanged();
+        }
+
+        // ================= LOGIC =================
 
         private async Task ScanAsync()
         {
             try
             {
+                SetBusyText("Сканирование приватности…");
+                SetStatus("Поиск приватных данных…");
+                IsBusy = true;
+
                 Items.Clear();
 
                 int totalFiles = 0;
@@ -103,6 +80,7 @@ namespace WashinPC.ViewModels
 
                 var groups = await Task.Run(() =>
                     _engine.Scan(out totalFiles, out totalBytes));
+
 
                 foreach (var g in groups)
                 {
@@ -117,13 +95,9 @@ namespace WashinPC.ViewModels
                 SummaryText =
                     $"Файлов: {totalFiles}, Размер: {FileSizeFormatter.Format(totalBytes)}";
             }
-            catch (System.Exception ex)
+            finally
             {
-                MessageBox.Show(
-                    ex.Message,
-                    "Ошибка сканирования",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                IsBusy = false;
             }
         }
 
@@ -143,17 +117,19 @@ namespace WashinPC.ViewModels
 
             try
             {
-                var log = new System.Collections.Generic.List<string>();
+                SetBusyText("Очистка приватных данных…");
+                SetStatus("Удаление файлов…");
+                IsBusy = true;
 
                 await Task.Run(() =>
-                    _engine.CleanSelected(selectedFiles, log));
+                    _engine.CleanSelected(selectedFiles, null));
 
                 Items.Clear();
                 SummaryText = "Файлов: 0, Размер: 0 MB";
             }
-            catch (System.Exception ex)
+            finally
             {
-                MessageBox.Show(ex.Message, "Ошибка очистки");
+                IsBusy = false;
             }
         }
     }
