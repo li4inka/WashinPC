@@ -13,27 +13,28 @@ namespace WashinPC.ViewModels
     {
         private readonly RegistryScanner _scanner = new RegistryScanner();
 
+        // ===================== VIEW ITEM =====================
+
         public class Issue
         {
-            public bool IsSelected { get; set; }
+            public bool IsSelected { get; set; } = true;
             public string Category { get; set; }
             public string KeyPath { get; set; }
             public string ValueName { get; set; }
             public string Details { get; set; }
-            public RegistryIssue Source { get; set; }
 
-            public Issue()
-            {
-                IsSelected = true;
-            }
+            public RegistryIssue Source { get; set; }
         }
 
-        public ObservableCollection<Issue> Items { get; private set; }
+        // ===================== DATA =====================
+
+        public ObservableCollection<Issue> Items { get; }
+            = new ObservableCollection<Issue>();
 
         private string _summaryText = "Найдено записей: 0";
         public string SummaryText
         {
-            get { return _summaryText; }
+            get => _summaryText;
             private set
             {
                 _summaryText = value;
@@ -41,16 +42,15 @@ namespace WashinPC.ViewModels
             }
         }
 
-        public bool CreateBackup { get; set; }
+        public bool CreateBackup { get; set; } = true;
 
-        public ICommand ScanCommand { get; private set; }
-        public ICommand FixCommand { get; private set; }
+        // ===================== COMMANDS =====================
+
+        public ICommand ScanCommand { get; }
+        public ICommand FixCommand { get; }
 
         public RegistryViewModel()
         {
-            Items = new ObservableCollection<Issue>();
-            CreateBackup = true;
-
             ScanCommand = new RelayCommand(
                 async () => await ScanAsync(),
                 () => !IsBusy);
@@ -62,9 +62,11 @@ namespace WashinPC.ViewModels
 
         protected override void OnBusyChanged()
         {
-            (ScanCommand as RelayCommand).RaiseCanExecuteChanged();
-            (FixCommand as RelayCommand).RaiseCanExecuteChanged();
+            (ScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
+
+        // ===================== LOGIC =====================
 
         private async Task ScanAsync()
         {
@@ -90,8 +92,8 @@ namespace WashinPC.ViewModels
                     });
                 }
 
-                SummaryText = string.Format("Найдено записей: {0}", Items.Count);
-                SetStatus(string.Format("Найдено проблем реестра: {0}", Items.Count));
+                SummaryText = $"Найдено записей: {Items.Count}";
+                SetStatus($"Найдено проблем реестра: {Items.Count}");
             }
             finally
             {
@@ -112,7 +114,7 @@ namespace WashinPC.ViewModels
             }
 
             if (DialogService.ShowConfirm(
-                    "Исправить выбранные проблемы реестра?\nРекомендуется создать резервную копию.")
+                    "Исправить выбранные проблемы реестра?\nРекомендуется создать резервные копии.")
                 != DialogResult.Yes)
                 return;
 
@@ -122,41 +124,65 @@ namespace WashinPC.ViewModels
                 SetStatus("Применение исправлений…");
                 IsBusy = true;
 
-                if (CreateBackup)
-                {
-                    try
-                    {
-                        RegistryBackup.CreateHKLMBackup();
-                        SetStatus("Резервная копия реестра создана");
-                    }
-                    catch
-                    {
-                        DialogService.ShowWarning(
-                            "Не удалось создать резервную копию реестра.");
-                    }
-                }
-
                 int fixedCount = 0;
+                int backupCount = 0;
 
                 foreach (var item in selected)
                 {
                     try
                     {
+                        if (CreateBackup)
+                        {
+                            var subKeyPath = ExtractSubKeyPath(item.KeyPath);
+                            if (!string.IsNullOrWhiteSpace(subKeyPath))
+                            {
+                                var regFile = RegistryBackup.ExportKey(
+                                    item.Source.Hive,
+                                    item.Source.View,
+                                    subKeyPath);
+
+                                if (!string.IsNullOrWhiteSpace(regFile))
+                                    backupCount++;
+                            }
+                        }
+
                         if (item.Source.Fix != null &&
                             item.Source.Fix(false) == RegistryFixResult.Fixed)
+                        {
                             fixedCount++;
+                        }
                     }
-                    catch { }
+                    catch
+                    {
+                        // как CCleaner — идём дальше
+                    }
                 }
 
-                SetStatus(string.Format("Исправлено проблем реестра: {0}", fixedCount));
+                if (CreateBackup && backupCount > 0)
+                    SetStatus($"Исправлено: {fixedCount}. Бэкапов: {backupCount}");
+                else
+                    SetStatus($"Исправлено проблем реестра: {fixedCount}");
             }
             finally
             {
                 IsBusy = false;
             }
 
-            ScanAsync();
+            _ = ScanAsync();
+        }
+
+        private static string ExtractSubKeyPath(string keyPathUi)
+        {
+            if (string.IsNullOrWhiteSpace(keyPathUi))
+                return null;
+
+            if (keyPathUi.StartsWith("HKLM\\"))
+                return keyPathUi.Substring("HKLM\\".Length);
+
+            if (keyPathUi.StartsWith("HKCU\\"))
+                return keyPathUi.Substring("HKCU\\".Length);
+
+            return null;
         }
     }
 }
