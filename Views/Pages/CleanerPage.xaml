@@ -41,43 +41,59 @@
                 </ListView>
 
                 <!-- BOTTOM BAR -->
+                <!-- BOTTOM BAR -->
                 <Border Grid.Row="1"
-                        Background="{StaticResource Brush.BottomBarBg}"
-                        BorderBrush="{StaticResource Brush.Border}"
-                        BorderThickness="0,1,0,0"
-                        Padding="10,8">
+        Margin="12,10,12,12"
+        Padding="12"
+        Background="#FAFAFA"
+        CornerRadius="10"
+        SnapsToDevicePixels="True">
+
+                    <Border.Effect>
+                        <DropShadowEffect
+            BlurRadius="16"
+            ShadowDepth="0"
+            Opacity="0.18"/>
+                    </Border.Effect>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
+                        <!-- BUTTONS -->
                         <StackPanel Grid.Column="0"
-                                    Orientation="Horizontal">
+                    Orientation="Horizontal">
                             <Button Style="{StaticResource PrimaryButton}"
-                                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
-                                    Command="{Binding ScanCommand}"/>
+                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
+                    Command="{Binding ScanCommand}"/>
 
                             <Button Style="{StaticResource PrimaryButton}"
-                                    Content="{Binding Source={x:Static loc:Loc.BtnClean}, Path=Value}"
-                                    Command="{Binding CleanCommand}"/>
+                    Content="{Binding Source={x:Static loc:Loc.BtnClean}, Path=Value}"
+                    Command="{Binding CleanCommand}"/>
 
                             <Button Style="{StaticResource PrimaryButton}"
-                                    Content="{Binding Source={x:Static loc:Loc.BtnRecycle}, Path=Value}"
-                                    Command="{Binding RecycleCommand}"/>
+                    Content="{Binding Source={x:Static loc:Loc.BtnRecycle}, Path=Value}"
+                    Command="{Binding RecycleCommand}"/>
                         </StackPanel>
 
-                        <CheckBox Grid.Column="1"
-                                  Content="{Binding Source={x:Static loc:Loc.ChkAggressive}, Path=Value}"
-                                  IsChecked="{Binding IsAggressive, Mode=TwoWay}"
-                                  Margin="20,0,0,0"/>
+                        <!-- OPTION -->
+                        <CheckBox Grid.Column="4"
+                  Content="{Binding Source={x:Static loc:Loc.ChkAggressive}, Path=Value}"
+                  IsChecked="{Binding IsAggressive, Mode=TwoWay}"
+                  VerticalAlignment="Center"/>
 
-                        <TextBlock Grid.Column="3"
-                                   Text="{Binding SummaryText, Mode=OneWay}"
-                                   Foreground="{StaticResource Brush.TextMuted}"/>
+                        <!-- SUMMARY -->
+                        <TextBlock Grid.Column="6"
+                   Text="{Binding SummaryText, Mode=OneWay}"
+                   VerticalAlignment="Center"
+                   Foreground="{StaticResource Brush.TextMuted}"/>
                     </Grid>
                 </Border>
             </Grid>

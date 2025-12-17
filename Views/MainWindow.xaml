@@ -7,20 +7,33 @@
         Height="640"
         MinWidth="1200"
         MinHeight="640"
+        WindowStartupLocation="CenterScreen"
         Background="{StaticResource Brush.AppBackground}"
-        WindowStartupLocation="CenterScreen">
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
 
-    <!-- OUTER AIR -->
-    <Grid Margin="20">
+    <!-- WINDOW CONTENT -->
+    <Grid Background="{StaticResource Brush.AppBackground}">
 
-        <!-- OUTER ROUNDED CONTAINER -->
-        <Border Style="{StaticResource AppContainer}">
+        <!-- APP CARD (RemoteHelper) -->
+        <Border
+            Margin="20"
+            Background="White"
+            CornerRadius="14"
+            SnapsToDevicePixels="True">
 
-            <!-- INNER CONTAINER (correct clipping) -->
-            <Border Margin="1"
-                    Background="White"
-                    CornerRadius="10"
-                    ClipToBounds="True">
+            <!-- SHADOW -->
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="28"
+                    ShadowDepth="0"
+                    Opacity="0.22"/>
+            </Border.Effect>
+
+            <!-- CLIPPED CONTENT -->
+            <Border CornerRadius="14"
+                    ClipToBounds="True"
+                    Background="White">
 
                 <Grid>
                     <Grid.RowDefinitions>
@@ -29,7 +42,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- HEADER -->
+                    <!-- ================= HEADER ================= -->
                     <DockPanel Margin="14,10">
 
                         <!-- BRAND -->
@@ -41,18 +54,20 @@
                                        FontWeight="Bold"
                                        VerticalAlignment="Center"/>
 
-                            <Border Style="{StaticResource ChannelBadge}">
+                            <Border Style="{StaticResource ChannelBadge}"
+                                    Margin="8,0,0,0">
                                 <TextBlock Text="{Binding AppInfo.Channel}"
                                            Style="{StaticResource ChannelBadgeText}"/>
                             </Border>
                         </StackPanel>
+
                     </DockPanel>
 
                     <!-- HEADER SEPARATOR -->
                     <Border Grid.Row="1"
                             Background="{StaticResource Brush.Border}"/>
 
-                    <!-- BODY -->
+                    <!-- ================= BODY ================= -->
                     <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="210"/>
@@ -84,7 +99,7 @@
                                              Tag="Settings"/>
                             </ListBox>
 
-                            <!-- SIDEBAR INFO (BOTTOM) -->
+                            <!-- SIDEBAR INFO -->
                             <StackPanel Grid.Row="1"
                                         Margin="14,10"
                                         VerticalAlignment="Bottom"
@@ -111,11 +126,12 @@
 
                         <!-- CONTENT -->
                         <ContentControl x:Name="ContentHost"
-                                        Grid.Column="2"/>
+                                        Grid.Column="2"
+                                        Margin="12"/>
                     </Grid>
                 </Grid>
-
             </Border>
+
         </Border>
     </Grid>
 </Window>
