@@ -7,9 +7,8 @@ using System.Windows;
 using WashinPC.Core;
 using WashinPC.Engines.Privacy;
 using WashinPC.UI;
-using WashinPC.ViewModels;
 
-namespace WashinPC.ViewsModels.Pages
+namespace WashinPC.ViewModels
 {
     public class PrivacyItemView : INotifyPropertyChanged
     {

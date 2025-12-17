@@ -12,19 +12,6 @@
 +---Assets
 |       WashinPC.ico
 |
-+---bin
-|   +---Debug
-|   |   \---net48
-|   |           WashinPC.exe
-|   |           WashinPC.exe.config
-|   |           WashinPC.pdb
-|   |
-|   \---Release
-|       \---net48
-|               WashinPC.exe
-|               WashinPC.exe.config
-|               WashinPC.pdb
-|
 +---Controls
 |       CleanerCardControl.xaml
 |       CleanerCardControl.xaml.cs
@@ -33,6 +20,7 @@
 |       AppBootstrap.cs
 |       AppInfo.cs
 |       AppSettings.cs
+|       FileSizeFormatter.cs
 |
 +---Engines
 |   |   Native.cs
@@ -49,238 +37,8 @@
 |           RegistryScanner.cs
 |
 +---Localization
-|       Localization.cs
 |       LocalizedString.cs
 |       Localizer.cs
-|
-+---obj
-|   |   project.assets.json
-|   |   project.nuget.cache
-|   |   washinpc.csproj.nuget.dgspec.json
-|   |   washinpc.csproj.nuget.g.props
-|   |   washinpc.csproj.nuget.g.targets
-|   |   washinpc_3sjmuuro_wpftmp.csproj.nuget.dgspec.json
-|   |   washinpc_3sjmuuro_wpftmp.csproj.nuget.g.props
-|   |   washinpc_3sjmuuro_wpftmp.csproj.nuget.g.targets
-|   |   washinpc_culnollo_wpftmp.csproj.nuget.dgspec.json
-|   |   washinpc_culnollo_wpftmp.csproj.nuget.g.props
-|   |   washinpc_culnollo_wpftmp.csproj.nuget.g.targets
-|   |   washinpc_itoyb05h_wpftmp.csproj.nuget.dgspec.json
-|   |   washinpc_itoyb05h_wpftmp.csproj.nuget.g.props
-|   |   washinpc_itoyb05h_wpftmp.csproj.nuget.g.targets
-|   |   washinpc_rdj2ynum_wpftmp.csproj.nuget.dgspec.json
-|   |   washinpc_rdj2ynum_wpftmp.csproj.nuget.g.props
-|   |   washinpc_rdj2ynum_wpftmp.csproj.nuget.g.targets
-|   |
-|   +---Debug
-|   |   \---net48
-|   |       |   .NETFramework,Version=v4.8.AssemblyAttributes.cs
-|   |       |   App.baml
-|   |       |   App.g.cs
-|   |       |   App.g.i.cs
-|   |       |   GeneratedInternalTypeHelper.g.cs
-|   |       |   GeneratedInternalTypeHelper.g.i.cs
-|   |       |   washinpc.assets.cache
-|   |       |   washinpc.csproj.AssemblyReference.cache
-|   |       |   washinpc.csproj.BuildWithSkipAnalyzers
-|   |       |   washinpc.csproj.CoreCompileInputs.cache
-|   |       |   washinpc.csproj.FileListAbsolute.txt
-|   |       |   WashinPC.exe
-|   |       |   WashinPC.exe.withSupportedRuntime.config
-|   |       |   WashinPC.g.resources
-|   |       |   washinpc.GeneratedMSBuildEditorConfig.editorconfig
-|   |       |   WashinPC.pdb
-|   |       |   washinpc.sourcelink.json
-|   |       |   WashinPC.Version.cs
-|   |       |   WashinPC.Version.cs.new
-|   |       |   WashinPC_MarkupCompile.cache
-|   |       |   WashinPC_MarkupCompile.i.cache
-|   |       |   WashinPC_MarkupCompile.i.lref
-|   |       |   WashinPC_MarkupCompile.lref
-|   |       |   washinpc_vxgy1vcp_wpftmp.assets.cache
-|   |       |   washinpc_vxgy1vcp_wpftmp.csproj.BuildWithSkipAnalyzers
-|   |       |   washinpc_vxgy1vcp_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|   |       |   washinpc_vxgy1vcp_wpftmp.sourcelink.json
-|   |       |   washinpc_zpspkq0o_wpftmp.assets.cache
-|   |       |   washinpc_zpspkq0o_wpftmp.csproj.BuildWithSkipAnalyzers
-|   |       |   washinpc_zpspkq0o_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|   |       |   washinpc_zpspkq0o_wpftmp.sourcelink.json
-|   |       |   washinpc_zylk4ht2_wpftmp.assets.cache
-|   |       |   washinpc_zylk4ht2_wpftmp.csproj.BuildWithSkipAnalyzers
-|   |       |   washinpc_zylk4ht2_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|   |       |   washinpc_zylk4ht2_wpftmp.sourcelink.json
-|   |       |
-|   |       +---Controls
-|   |       |       CleanerCardControl.baml
-|   |       |       CleanerCardControl.g.cs
-|   |       |       CleanerCardControl.g.i.cs
-|   |       |
-|   |       +---Styles
-|   |       |       Controls.baml
-|   |       |       Theme.Light.baml
-|   |       |
-|   |       +---UI
-|   |       |   \---Dialogs
-|   |       |           AppDialog.baml
-|   |       |           AppDialog.g.cs
-|   |       |           AppDialog.g.i.cs
-|   |       |
-|   |       \---Views
-|   |           |   MainWindow.baml
-|   |           |   MainWindow.g.cs
-|   |           |   MainWindow.g.i.cs
-|   |           |
-|   |           \---Pages
-|   |                   CleanerPage.baml
-|   |                   CleanerPage.g.cs
-|   |                   CleanerPage.g.i.cs
-|   |                   PrivacyPage.baml
-|   |                   PrivacyPage.g.cs
-|   |                   PrivacyPage.g.i.cs
-|   |                   RegistryPage.baml
-|   |                   RegistryPage.g.cs
-|   |                   RegistryPage.g.i.cs
-|   |                   SettingsPage.baml
-|   |                   SettingsPage.g.cs
-|   |                   SettingsPage.g.i.cs
-|   |
-|   \---Release
-|       \---net48
-|           |   .NETFramework,Version=v4.8.AssemblyAttributes.cs
-|           |   App.baml
-|           |   App.g.cs
-|           |   App.g.i.cs
-|           |   GeneratedInternalTypeHelper.g.cs
-|           |   GeneratedInternalTypeHelper.g.i.cs
-|           |   washinpc.assets.cache
-|           |   washinpc.csproj.AssemblyReference.cache
-|           |   washinpc.csproj.BuildWithSkipAnalyzers
-|           |   washinpc.csproj.CoreCompileInputs.cache
-|           |   washinpc.csproj.FileListAbsolute.txt
-|           |   WashinPC.exe
-|           |   WashinPC.exe.config
-|           |   WashinPC.exe.withSupportedRuntime.config
-|           |   WashinPC.g.resources
-|           |   washinpc.GeneratedMSBuildEditorConfig.editorconfig
-|           |   WashinPC.pdb
-|           |   washinpc.sourcelink.json
-|           |   WashinPC.Version.cs
-|           |   WashinPC.Version.cs.new
-|           |   washinpc_3sjmuuro_wpftmp.assets.cache
-|           |   washinpc_3sjmuuro_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_3sjmuuro_wpftmp.sourcelink.json
-|           |   washinpc_4541pukn_wpftmp.assets.cache
-|           |   washinpc_4541pukn_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_4541pukn_wpftmp.sourcelink.json
-|           |   washinpc_45he1vfl_wpftmp.assets.cache
-|           |   washinpc_45he1vfl_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_45he1vfl_wpftmp.sourcelink.json
-|           |   washinpc_5cxy24rr_wpftmp.assets.cache
-|           |   washinpc_5cxy24rr_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_5cxy24rr_wpftmp.sourcelink.json
-|           |   washinpc_a0tz120v_wpftmp.assets.cache
-|           |   washinpc_a0tz120v_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_a0tz120v_wpftmp.sourcelink.json
-|           |   washinpc_aekcyqy0_wpftmp.assets.cache
-|           |   washinpc_aekcyqy0_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_aekcyqy0_wpftmp.sourcelink.json
-|           |   washinpc_apqfdzhi_wpftmp.assets.cache
-|           |   washinpc_apqfdzhi_wpftmp.csproj.BuildWithSkipAnalyzers
-|           |   washinpc_apqfdzhi_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_apqfdzhi_wpftmp.sourcelink.json
-|           |   washinpc_bbujmuub_wpftmp.assets.cache
-|           |   washinpc_bbujmuub_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_bbujmuub_wpftmp.sourcelink.json
-|           |   washinpc_cbwzs33b_wpftmp.assets.cache
-|           |   washinpc_cbwzs33b_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_cbwzs33b_wpftmp.sourcelink.json
-|           |   washinpc_culnollo_wpftmp.assets.cache
-|           |   washinpc_culnollo_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_culnollo_wpftmp.sourcelink.json
-|           |   washinpc_fnzbbnbz_wpftmp.assets.cache
-|           |   washinpc_fnzbbnbz_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_fnzbbnbz_wpftmp.sourcelink.json
-|           |   washinpc_hkeprhog_wpftmp.assets.cache
-|           |   washinpc_hkeprhog_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_hkeprhog_wpftmp.sourcelink.json
-|           |   washinpc_hxnmm5aa_wpftmp.assets.cache
-|           |   washinpc_hxnmm5aa_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_hxnmm5aa_wpftmp.sourcelink.json
-|           |   washinpc_idbrfpmr_wpftmp.assets.cache
-|           |   washinpc_idbrfpmr_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_idbrfpmr_wpftmp.sourcelink.json
-|           |   washinpc_ipp0bzue_wpftmp.assets.cache
-|           |   washinpc_ipp0bzue_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_ipp0bzue_wpftmp.sourcelink.json
-|           |   washinpc_itoyb05h_wpftmp.assets.cache
-|           |   washinpc_itoyb05h_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_itoyb05h_wpftmp.sourcelink.json
-|           |   washinpc_l5wejabv_wpftmp.assets.cache
-|           |   washinpc_l5wejabv_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_l5wejabv_wpftmp.sourcelink.json
-|           |   WashinPC_MarkupCompile.cache
-|           |   WashinPC_MarkupCompile.i.cache
-|           |   WashinPC_MarkupCompile.i.lref
-|           |   WashinPC_MarkupCompile.lref
-|           |   washinpc_qkb2ycad_wpftmp.assets.cache
-|           |   washinpc_qkb2ycad_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_qkb2ycad_wpftmp.sourcelink.json
-|           |   washinpc_r5xppzin_wpftmp.assets.cache
-|           |   washinpc_r5xppzin_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_r5xppzin_wpftmp.sourcelink.json
-|           |   washinpc_rdj2ynum_wpftmp.assets.cache
-|           |   washinpc_rdj2ynum_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_rdj2ynum_wpftmp.sourcelink.json
-|           |   washinpc_udwolbnm_wpftmp.assets.cache
-|           |   washinpc_udwolbnm_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_udwolbnm_wpftmp.sourcelink.json
-|           |   washinpc_ul0deaw2_wpftmp.assets.cache
-|           |   washinpc_ul0deaw2_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_ul0deaw2_wpftmp.sourcelink.json
-|           |   washinpc_v02e4ljn_wpftmp.assets.cache
-|           |   washinpc_v02e4ljn_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_v02e4ljn_wpftmp.sourcelink.json
-|           |   washinpc_vrayplvr_wpftmp.assets.cache
-|           |   washinpc_vrayplvr_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_vrayplvr_wpftmp.sourcelink.json
-|           |   washinpc_yhsdkdwn_wpftmp.assets.cache
-|           |   washinpc_yhsdkdwn_wpftmp.csproj.BuildWithSkipAnalyzers
-|           |   washinpc_yhsdkdwn_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
-|           |   washinpc_yhsdkdwn_wpftmp.sourcelink.json
-|           |
-|           +---Controls
-|           |       CleanerCardControl.baml
-|           |       CleanerCardControl.g.cs
-|           |       CleanerCardControl.g.i.cs
-|           |
-|           +---Styles
-|           |       Controls.baml
-|           |       Theme.Light.baml
-|           |
-|           +---UI
-|           |   \---Dialogs
-|           |           AppDialog.baml
-|           |           AppDialog.g.cs
-|           |           AppDialog.g.i.cs
-|           |
-|           \---Views
-|               |   MainWindow.baml
-|               |   MainWindow.g.cs
-|               |   MainWindow.g.i.cs
-|               |
-|               \---Pages
-|                       CleanerPage.baml
-|                       CleanerPage.g.cs
-|                       CleanerPage.g.i.cs
-|                       PrivacyPage.baml
-|                       PrivacyPage.g.cs
-|                       PrivacyPage.g.i.cs
-|                       RegistryPage.baml
-|                       RegistryPage.g.cs
-|                       RegistryPage.g.i.cs
-|                       SettingsPage.baml
-|                       SettingsPage.g.cs
-|                       SettingsPage.g.i.cs
 |
 +---Properties
 |       AssemblyInfo.cs
@@ -296,15 +54,12 @@
 |       Theme.Light.xaml
 |
 +---UI
+|   |   Dialogs.cs
 |   |   RelayCommand.cs
 |   |
 |   +---Dialogs
 |   |       AppDialog.xaml
 |   |       AppDialog.xaml.cs
-|   |       DialogResult.cs
-|   |       DialogService.cs
-|   |       DialogType.cs
-|   |       DialogViewModel.cs
 |   |
 |   \---Effects
 |           UiEffects.cs
@@ -325,11 +80,15 @@
 |
 \---ViewsModels
     |   BaseViewModel.cs
+    |   CleanerViewModel.cs
+    |   MainViewModel.cs
+    |   PrivacyViewModel.cs
+    |   RegistryViewModel.cs
+    |   SettingsViewModel.cs
     |
-    \---Pages
-            CleanerItemView.cs
-            CleanerViewModel.cs
-            PrivacyViewModel.cs
-            RegistryIssueView.cs
-            RegistryViewModel.cs
-            SettingsViewModel.cs
+    \---Common
+            SizeItemViewModel.cs
+
+
+
+PS D:\Git\washinpc>

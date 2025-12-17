@@ -8,9 +8,8 @@ using WashinPC.Engines.Cleaner;
 using WashinPC.Services;
 using WashinPC.UI;
 using WashinPC.UI.Dialogs;
-using WashinPC.ViewModels;
 
-namespace WashinPC.ViewsModels.Pages
+namespace WashinPC.ViewModels
 {
     public class CleanerItemView : INotifyPropertyChanged
     {

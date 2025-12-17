@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Windows.Controls;
 using WashinPC.ViewModels;
 using WashinPC.Views.Pages;
-using WashinPC.ViewsModels.Pages;
 
 namespace WashinPC.Services
 {

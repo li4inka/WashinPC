@@ -19,20 +19,15 @@ namespace WashinPC.Engines.Registry
         public RegistryHive Hive { get; set; }
         public RegistryView View { get; set; }
 
-        public string KeyPath { get; set; }     // Для UI: HKLM\...\...
+        public string KeyPath { get; set; }
         public string ValueName { get; set; }
         public string Details { get; set; }
 
-        /// <summary>Func(dryRun) => Fixed/Failed</summary>
         public Func<bool, RegistryFixResult> Fix { get; set; }
-        public RegistryFixResult Result { get; set; } = RegistryFixResult.None;
     }
 
     /// <summary>
-    /// Очень консервативный "чистильщик" реестра:
-    /// - не трогаем HKCR/CLSID/COM/TypeLib/Interfaces
-    /// - только безопасные категории: App Paths, Uninstall (только EXE-унсталлеры), SharedDLLs
-    /// - перед удалением в Fix перепроверяем "битость"
+    /// Консервативный и безопасный сканер реестра
     /// </summary>
     public sealed class RegistryScanner
     {
@@ -49,10 +44,35 @@ namespace WashinPC.Engines.Registry
             return _issues.AsReadOnly();
         }
 
-        // ---------------- helpers ----------------
+        // ================= SAFETY =================
+
+        private static bool IsForbiddenKey(string keyPathUi)
+        {
+            if (string.IsNullOrWhiteSpace(keyPathUi))
+                return true;
+
+            var k = keyPathUi.ToUpperInvariant();
+
+            return
+                k.Contains(@"\SYSTEM\") ||
+                k.Contains(@"\SERVICES\") ||
+                k.Contains(@"\DRIVERS\") ||
+                k.Contains(@"\POLICIES\") ||
+                k.Contains(@"\CLASSES\") ||
+                k.Contains(@"\CLSID\") ||
+                k.Contains(@"\INTERFACE\") ||
+                k.Contains(@"\TYPELIB\");
+        }
 
         private static RegistryKey OpenBase(RegistryHive hive, RegistryView view)
             => RegistryKey.OpenBaseKey(hive, view);
+
+        private static string ExpandEnv(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return s;
+            try { return Environment.ExpandEnvironmentVariables(s); }
+            catch { return s; }
+        }
 
         private void AddIssue(
             string category,
@@ -63,6 +83,9 @@ namespace WashinPC.Engines.Registry
             string details,
             Func<bool, RegistryFixResult> fix)
         {
+            if (IsForbiddenKey(keyPathUi))
+                return;
+
             _issues.Add(new RegistryIssue
             {
                 Category = category,
@@ -75,83 +98,7 @@ namespace WashinPC.Engines.Registry
             });
         }
 
-        private static string ExpandEnv(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return s;
-            try { return Environment.ExpandEnvironmentVariables(s); }
-            catch { return s; }
-        }
-
-        private static string ExtractExePathFromCommand(string command)
-        {
-            if (string.IsNullOrWhiteSpace(command))
-                return null;
-
-            command = ExpandEnv(command).Trim();
-
-            // Типичные форматы:
-            // "C:\Path\uninstall.exe" /S
-            // C:\Path\uninstall.exe /S
-            // rundll32.exe ...
-            // msiexec /x {GUID}
-            // "C:\Path\something.exe"
-            if (command.StartsWith("\""))
-            {
-                var end = command.IndexOf('"', 1);
-                if (end > 1)
-                {
-                    var p = command.Substring(1, end - 1);
-                    return p.Trim();
-                }
-            }
-
-            // иначе берём первый токен до пробела
-            var first = command.Split(new[] { ' ' }, 2)[0].Trim();
-            if (string.IsNullOrWhiteSpace(first)) return null;
-            return first;
-        }
-
-        private static bool IsMsiUninstall(string uninstallString, RegistryKey appKey)
-        {
-            // MSI-ключи часто имеют WindowsInstaller=1 и UninstallString=msiexec...
-            try
-            {
-                var wi = appKey?.GetValue("WindowsInstaller");
-                if (wi is int wiInt && wiInt == 1) return true;
-                if (wi is string wiStr && wiStr == "1") return true;
-            }
-            catch { }
-
-            if (string.IsNullOrWhiteSpace(uninstallString)) return false;
-
-            var s = ExpandEnv(uninstallString).Trim().ToLowerInvariant();
-            if (s.StartsWith("msiexec"))
-                return true;
-
-            // иногда: "C:\Windows\System32\msiexec.exe" /x {GUID}
-            if (s.Contains("msiexec.exe"))
-                return true;
-
-            return false;
-        }
-
-        private static bool LooksLikeValidSystemUninstaller(string uninstallString)
-        {
-            if (string.IsNullOrWhiteSpace(uninstallString)) return false;
-
-            var s = ExpandEnv(uninstallString).Trim().ToLowerInvariant();
-
-            // rundll32.exe, control.exe appwiz.cpl и т.п. не считаем "битостью"
-            if (s.StartsWith("rundll32") || s.Contains("rundll32.exe"))
-                return true;
-
-            if (s.StartsWith("control") || s.Contains("control.exe"))
-                return true;
-
-            return false;
-        }
-
-        // ---------------- Application Paths ----------------
+        // ================= APP PATHS =================
 
         private void ScanApplicationPaths()
         {
@@ -173,293 +120,26 @@ namespace WashinPC.Engines.Registry
                                 var raw = app?.GetValue(null) as string;
                                 if (string.IsNullOrWhiteSpace(raw)) continue;
 
-                                // Иногда туда пишут команду с аргументами — извлечём exe
-                                var exe = ExtractExePathFromCommand(raw);
-                                if (string.IsNullOrWhiteSpace(exe)) continue;
-
-                                exe = ExpandEnv(exe);
-
-                                // Очень консервативно: помечаем только если путь абсолютный и файла нет
-                                if (Path.IsPathRooted(exe) && !File.Exists(exe))
-                                {
-                                    var skLocal = sk;
-
-                                    AddIssue(
-                                        "Application Paths",
-                                        RegistryHive.LocalMachine,
-                                        view,
-                                        $@"HKLM\{sub}\{skLocal}",
-                                        "(Default)",
-                                        "Путь не существует: " + exe,
-                                        dryRun =>
-                                        {
-                                            try
-                                            {
-                                                // перепроверка в момент фикса
-                                                if (!IsAppPathBroken(view, skLocal))
-                                                    return RegistryFixResult.Fixed;
-
-                                                if (!dryRun)
-                                                {
-                                                    using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                                    using (var w = wbase.OpenSubKey(sub, writable: true))
-                                                    {
-                                                        if (w == null) return RegistryFixResult.Failed;
-                                                        w.DeleteSubKeyTree(skLocal, throwOnMissingSubKey: false);
-                                                    }
-                                                }
-                                                return RegistryFixResult.Fixed;
-                                            }
-                                            catch
-                                            {
-                                                return RegistryFixResult.Failed;
-                                            }
-                                        });
-                                }
-                            }
-                        }
-                    }
-                }
-                catch { }
-            }
-        }
-
-        private bool IsAppPathBroken(RegistryView view, string subKeyName)
-        {
-            const string sub = @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths";
-            try
-            {
-                using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
-                using (var key = baseKey.OpenSubKey(sub))
-                using (var app = key?.OpenSubKey(subKeyName))
-                {
-                    var raw = app?.GetValue(null) as string;
-                    if (string.IsNullOrWhiteSpace(raw)) return false;
-
-                    var exe = ExtractExePathFromCommand(raw);
-                    if (string.IsNullOrWhiteSpace(exe)) return false;
-
-                    exe = ExpandEnv(exe);
-                    if (!Path.IsPathRooted(exe)) return false;
-
-                    return !File.Exists(exe);
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        // ---------------- Uninstall Entries ----------------
-
-        private void ScanUninstallEntries()
-        {
-            const string sub = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
-
-            foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
-            {
-                foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                {
-                    try
-                    {
-                        using (var baseKey = OpenBase(hive, view))
-                        using (var key = baseKey.OpenSubKey(sub))
-                        {
-                            if (key == null) continue;
-
-                            foreach (var sk in key.GetSubKeyNames())
-                            {
-                                using (var app = key.OpenSubKey(sk))
-                                {
-                                    if (app == null) continue;
-
-                                    var displayName = app.GetValue("DisplayName") as string;
-                                    var uninstallStr = app.GetValue("UninstallString") as string;
-                                    var installLoc = app.GetValue("InstallLocation") as string;
-                                    var displayIcon = app.GetValue("DisplayIcon") as string;
-
-                                    // Если нет DisplayName — часто это служебные ключи, не трогаем
-                                    if (string.IsNullOrWhiteSpace(displayName))
-                                        continue;
-
-                                    // MSI и "системные" команды не чистим вообще
-                                    if (IsMsiUninstall(uninstallStr, app))
-                                        continue;
-
-                                    if (LooksLikeValidSystemUninstaller(uninstallStr))
-                                        continue;
-
-                                    // Консервативная логика:
-                                    // считаем "битым" ТОЛЬКО если есть явный EXE-унсталлер и он отсутствует.
-                                    var exe = ExtractExePathFromCommand(uninstallStr);
-                                    exe = ExpandEnv(exe);
-
-                                    bool hasExeCandidate = !string.IsNullOrWhiteSpace(exe)
-                                                           && (exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                                                               || exe.IndexOf(".exe", StringComparison.OrdinalIgnoreCase) >= 0);
-
-                                    // Доп. попытка: DisplayIcon иногда содержит путь к uninstall.exe/приложению
-                                    if (!hasExeCandidate && !string.IsNullOrWhiteSpace(displayIcon))
-                                    {
-                                        var di = ExtractExePathFromCommand(displayIcon);
-                                        di = ExpandEnv(di);
-                                        if (!string.IsNullOrWhiteSpace(di) && di.IndexOf(".exe", StringComparison.OrdinalIgnoreCase) >= 0)
-                                        {
-                                            exe = di;
-                                            hasExeCandidate = true;
-                                        }
-                                    }
-
-                                    if (!hasExeCandidate)
-                                        continue;
-
-                                    // Нормализуем: если в строке "C:\...\unins000.exe,0"
-                                    exe = exe?.Split(',').FirstOrDefault()?.Trim();
-                                    if (string.IsNullOrWhiteSpace(exe)) continue;
-
-                                    // Если путь не абсолютный — не трогаем
-                                    if (!Path.IsPathRooted(exe))
-                                        continue;
-
-                                    bool exeMissing = !File.Exists(exe);
-
-                                    // InstallLocation НЕ используем как “единственный” критерий (много ложных),
-                                    // но можем добавить в details
-                                    installLoc = ExpandEnv(installLoc);
-
-                                    if (!exeMissing)
-                                        continue;
-
-                                    var hiveStr = hive == RegistryHive.LocalMachine ? "HKLM" : "HKCU";
-                                    var skLocal = sk;
-
-                                    AddIssue(
-                                        "Uninstall Entries",
-                                        hive,
-                                        view,
-                                        $@"{hiveStr}\{sub}\{skLocal}",
-                                        "",
-                                        $"Битая запись деинсталляции: отсутствует {exe}",
-                                        dryRun =>
-                                        {
-                                            try
-                                            {
-                                                // перепроверка в момент фикса
-                                                if (!IsUninstallEntryBroken(hive, view, skLocal))
-                                                    return RegistryFixResult.Fixed;
-
-                                                if (!dryRun)
-                                                {
-                                                    using (var wbase = OpenBase(hive, view))
-                                                    using (var w = wbase.OpenSubKey(sub, writable: true))
-                                                    {
-                                                        if (w == null) return RegistryFixResult.Failed;
-                                                        w.DeleteSubKeyTree(skLocal, throwOnMissingSubKey: false);
-                                                    }
-                                                }
-                                                return RegistryFixResult.Fixed;
-                                            }
-                                            catch
-                                            {
-                                                return RegistryFixResult.Failed;
-                                            }
-                                        });
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                }
-            }
-        }
-
-        private bool IsUninstallEntryBroken(RegistryHive hive, RegistryView view, string subKeyName)
-        {
-            const string sub = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
-            try
-            {
-                using (var baseKey = OpenBase(hive, view))
-                using (var key = baseKey.OpenSubKey(sub))
-                using (var app = key?.OpenSubKey(subKeyName))
-                {
-                    if (app == null) return false;
-
-                    var displayName = app.GetValue("DisplayName") as string;
-                    if (string.IsNullOrWhiteSpace(displayName)) return false;
-
-                    var uninstallStr = app.GetValue("UninstallString") as string;
-                    if (IsMsiUninstall(uninstallStr, app)) return false;
-                    if (LooksLikeValidSystemUninstaller(uninstallStr)) return false;
-
-                    var exe = ExtractExePathFromCommand(uninstallStr);
-                    exe = ExpandEnv(exe);
-                    exe = exe?.Split(',').FirstOrDefault()?.Trim();
-
-                    if (string.IsNullOrWhiteSpace(exe)) return false;
-                    if (!Path.IsPathRooted(exe)) return false;
-
-                    return !File.Exists(exe);
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        // ---------------- Shared DLLs ----------------
-
-        private void ScanSharedDlls()
-        {
-            const string sub = @"SOFTWARE\Microsoft\Windows\CurrentVersion\SharedDLLs";
-
-            foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-            {
-                try
-                {
-                    using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
-                    using (var key = baseKey.OpenSubKey(sub))
-                    {
-                        if (key == null) continue;
-
-                        foreach (var name in key.GetValueNames())
-                        {
-                            if (string.IsNullOrWhiteSpace(name)) continue;
-
-                            var path = ExpandEnv(name);
-
-                            // Консервативно: трогаем только абсолютные пути
-                            if (!Path.IsPathRooted(path))
-                                continue;
-
-                            if (!File.Exists(path))
-                            {
-                                var valueNameLocal = name;
+                                var exe = ExpandEnv(raw.Trim('"'));
+                                if (!Path.IsPathRooted(exe)) continue;
+                                if (File.Exists(exe)) continue;
 
                                 AddIssue(
-                                    "Shared DLLs",
+                                    "Application Paths",
                                     RegistryHive.LocalMachine,
                                     view,
-                                    $@"HKLM\{sub}",
-                                    valueNameLocal,
-                                    "Файл не существует: " + path,
+                                    $@"HKLM\{sub}\{sk}",
+                                    "(Default)",
+                                    $"Путь не существует: {exe}",
                                     dryRun =>
                                     {
                                         try
                                         {
-                                            // перепроверка в момент фикса
-                                            if (!IsSharedDllMissing(view, valueNameLocal))
-                                                return RegistryFixResult.Fixed;
-
                                             if (!dryRun)
                                             {
                                                 using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                                using (var w = wbase.OpenSubKey(sub, writable: true))
-                                                {
-                                                    if (w == null) return RegistryFixResult.Failed;
-                                                    w.DeleteValue(valueNameLocal, throwOnMissingValue: false);
-                                                }
+                                                using (var w = wbase.OpenSubKey(sub, true))
+                                                    w?.DeleteSubKeyTree(sk, false);
                                             }
                                             return RegistryFixResult.Fixed;
                                         }
@@ -476,27 +156,129 @@ namespace WashinPC.Engines.Registry
             }
         }
 
-        private bool IsSharedDllMissing(RegistryView view, string valueName)
+        // ================= UNINSTALL =================
+
+        private void ScanUninstallEntries()
+        {
+            const string sub = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+
+            foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
+                foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                {
+                    try
+                    {
+                        using (var baseKey = OpenBase(hive, view))
+                        using (var key = baseKey.OpenSubKey(sub))
+                        {
+                            if (key == null) continue;
+
+                            foreach (var sk in key.GetSubKeyNames())
+                            {
+                                using (var app = key.OpenSubKey(sk))
+                                {
+                                    var name = app?.GetValue("DisplayName") as string;
+                                    var uninstall = app?.GetValue("UninstallString") as string;
+                                    if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(uninstall))
+                                        continue;
+
+                                    uninstall = ExpandEnv(uninstall);
+                                    if (uninstall.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        continue;
+
+                                    if (uninstall.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        continue;
+
+                                    var exe = uninstall.Trim('"').Split(' ').FirstOrDefault();
+                                    if (!Path.IsPathRooted(exe)) continue;
+                                    if (File.Exists(exe)) continue;
+
+                                    var hiveStr = hive == RegistryHive.LocalMachine ? "HKLM" : "HKCU";
+
+                                    AddIssue(
+                                        "Uninstall Entries",
+                                        hive,
+                                        view,
+                                        $@"{hiveStr}\{sub}\{sk}",
+                                        "",
+                                        $"Отсутствует файл деинсталляции: {exe}",
+                                        dryRun =>
+                                        {
+                                            try
+                                            {
+                                                if (!dryRun)
+                                                {
+                                                    using (var wbase = OpenBase(hive, view))
+                                                    using (var w = wbase.OpenSubKey(sub, true))
+                                                        w?.DeleteSubKeyTree(sk, false);
+                                                }
+                                                return RegistryFixResult.Fixed;
+                                            }
+                                            catch
+                                            {
+                                                return RegistryFixResult.Failed;
+                                            }
+                                        });
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+        }
+
+        // ================= SHARED DLLS =================
+
+        private void ScanSharedDlls()
         {
             const string sub = @"SOFTWARE\Microsoft\Windows\CurrentVersion\SharedDLLs";
-            try
+
+            foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
-                using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
-                using (var key = baseKey.OpenSubKey(sub))
+                try
                 {
-                    if (key == null) return false;
+                    using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
+                    using (var key = baseKey.OpenSubKey(sub))
+                    {
+                        if (key == null) continue;
 
-                    // valueName тут — имя значения, которое является путём
-                    var path = ExpandEnv(valueName);
-                    if (string.IsNullOrWhiteSpace(path)) return false;
-                    if (!Path.IsPathRooted(path)) return false;
+                        foreach (var valueName in key.GetValueNames())
+                        {
+                            var path = ExpandEnv(valueName);
+                            if (!Path.IsPathRooted(path)) continue;
+                            if (File.Exists(path)) continue;
 
-                    return !File.Exists(path);
+                            var count = key.GetValue(valueName);
+                            if (count is int c && c > 1)
+                                continue;
+
+                            AddIssue(
+                                "Shared DLLs",
+                                RegistryHive.LocalMachine,
+                                view,
+                                $@"HKLM\{sub}",
+                                valueName,
+                                $"Файл не существует: {path}",
+                                dryRun =>
+                                {
+                                    try
+                                    {
+                                        if (!dryRun)
+                                        {
+                                            using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
+                                            using (var w = wbase.OpenSubKey(sub, true))
+                                                w?.DeleteValue(valueName, false);
+                                        }
+                                        return RegistryFixResult.Fixed;
+                                    }
+                                    catch
+                                    {
+                                        return RegistryFixResult.Failed;
+                                    }
+                                });
+                        }
+                    }
                 }
-            }
-            catch
-            {
-                return false;
+                catch { }
             }
         }
     }
