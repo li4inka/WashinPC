@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using WashinPC.Core.Mvvm;
 using WashinPC.Engines.Registry;
+using WashinPC.Localization;
 using WashinPC.Services;
-using WashinPC.UI;
-using WashinPC.UI.Dialogs;
 
 namespace WashinPC.ViewModels
 {
@@ -13,38 +13,37 @@ namespace WashinPC.ViewModels
     {
         private readonly RegistryScanner _scanner = new RegistryScanner();
 
-        // ===================== VIEW ITEM =====================
-
         public class Issue
         {
             public bool IsSelected { get; set; } = true;
-            public string Category { get; set; }
+
+            public string Category { get; private set; }
             public string KeyPath { get; set; }
             public string ValueName { get; set; }
-            public string Details { get; set; }
+            public string Details { get; private set; }
 
             public RegistryIssue Source { get; set; }
-        }
 
-        // ===================== DATA =====================
+            public void RefreshText()
+            {
+                if (Source == null)
+                    return;
+
+                Source.RefreshText();
+                Category = Source.Category;
+                Details = Source.Details;
+            }
+        }
 
         public ObservableCollection<Issue> Items { get; }
             = new ObservableCollection<Issue>();
 
-        private string _summaryText = "Найдено записей: 0";
-        public string SummaryText
-        {
-            get => _summaryText;
-            private set
-            {
-                _summaryText = value;
-                OnPropertyChanged();
-            }
-        }
+        private int _issuesCount;
+
+        public string SummaryText =>
+            string.Format(Loc.SummaryRegistry.Value, _issuesCount);
 
         public bool CreateBackup { get; set; } = true;
-
-        // ===================== COMMANDS =====================
 
         public ICommand ScanCommand { get; }
         public ICommand FixCommand { get; }
@@ -58,6 +57,23 @@ namespace WashinPC.ViewModels
             FixCommand = new RelayCommand(
                 Fix,
                 () => !IsBusy && Items.Any(i => i.IsSelected));
+
+            // мгновенное обновление Category/Details/Summary при смене языка
+            Localizer.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            foreach (var i in Items)
+                i.RefreshText();
+
+            // заставим DataGrid обновить строки (Items не INotifyPropertyChanged)
+            var snap = Items.ToList();
+            Items.Clear();
+            foreach (var x in snap)
+                Items.Add(x);
+
+            OnPropertyChanged(nameof(SummaryText));
         }
 
         protected override void OnBusyChanged()
@@ -66,14 +82,12 @@ namespace WashinPC.ViewModels
             (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
-        // ===================== LOGIC =====================
-
         private async Task ScanAsync()
         {
             try
             {
-                SetBusyText("Сканирование реестра…");
-                SetStatus("Поиск проблемных записей реестра…");
+                SetBusyText(Loc.RegistryScanning.Value);
+                SetStatus(Loc.RegistrySearching.Value);
                 IsBusy = true;
 
                 Items.Clear();
@@ -82,18 +96,21 @@ namespace WashinPC.ViewModels
 
                 foreach (var i in issues)
                 {
-                    Items.Add(new Issue
+                    var vm = new Issue
                     {
-                        Category = i.Category,
                         KeyPath = i.KeyPath,
                         ValueName = i.ValueName,
-                        Details = i.Details,
                         Source = i
-                    });
+                    };
+                    vm.RefreshText();
+
+                    Items.Add(vm);
                 }
 
-                SummaryText = $"Найдено записей: {Items.Count}";
-                SetStatus($"Найдено проблем реестра: {Items.Count}");
+                _issuesCount = Items.Count;
+                OnPropertyChanged(nameof(SummaryText));
+
+                SetStatus(string.Format(Loc.SummaryRegistry.Value, _issuesCount));
             }
             finally
             {
@@ -109,19 +126,17 @@ namespace WashinPC.ViewModels
 
             if (selected.Count == 0)
             {
-                DialogService.ShowInfo("Нет выбранных проблем для исправления.");
+                DialogService.ShowInfo(Loc.RegistryNoSelection.Value);
                 return;
             }
 
-            if (DialogService.ShowConfirm(
-                    "Исправить выбранные проблемы реестра?\nРекомендуется создать резервные копии.")
-                != DialogResult.Yes)
+            if (DialogService.ShowConfirm(Loc.RegistryConfirmFix.Value) != DialogResult.Yes)
                 return;
 
             try
             {
-                SetBusyText("Исправление реестра…");
-                SetStatus("Применение исправлений…");
+                SetBusyText(Loc.StatusCleaning.Value);
+                SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
                 int fixedCount = 0;
@@ -136,7 +151,7 @@ namespace WashinPC.ViewModels
                             var subKeyPath = ExtractSubKeyPath(item.KeyPath);
                             if (!string.IsNullOrWhiteSpace(subKeyPath))
                             {
-                                var regFile = RegistryBackup.ExportKey(
+                                var regFile = Engines.Registry.RegistryBackup.ExportKey(
                                     item.Source.Hive,
                                     item.Source.View,
                                     subKeyPath);
@@ -159,9 +174,14 @@ namespace WashinPC.ViewModels
                 }
 
                 if (CreateBackup && backupCount > 0)
-                    SetStatus($"Исправлено: {fixedCount}. Бэкапов: {backupCount}");
+                    SetStatus(string.Format(
+                        Loc.RegistryFixedWithBackup.Value,
+                        fixedCount,
+                        backupCount));
                 else
-                    SetStatus($"Исправлено проблем реестра: {fixedCount}");
+                    SetStatus(string.Format(
+                        Loc.RegistryFixed.Value,
+                        fixedCount));
             }
             finally
             {

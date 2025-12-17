@@ -1,60 +1,42 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using WashinPC.Core;
+using WashinPC.Core.Mvvm;
+using WashinPC.Core.Utils;
 using WashinPC.Engines.Privacy;
-using WashinPC.UI;
+using WashinPC.Localization;
 using WashinPC.ViewModels.Common;
 
 namespace WashinPC.ViewModels
 {
-    public class PrivacyItemView : SizeItemViewModel
-    {
-        private int _fileCount;
-
-        public int FileCount
-        {
-            get => _fileCount;
-            set
-            {
-                if (_fileCount == value) return;
-                _fileCount = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public class PrivacyViewModel : BaseViewModel
+    public sealed class PrivacyViewModel : BaseViewModel
     {
         private readonly PrivacyEngine _engine = new PrivacyEngine();
 
-        public ObservableCollection<PrivacyItemView> Items { get; }
-            = new ObservableCollection<PrivacyItemView>();
+        public ObservableCollection<SizeItemViewModel> Items { get; }
+            = new ObservableCollection<SizeItemViewModel>();
 
-        private string _summaryText = "Файлов: 0, Размер: 0 MB";
-        public string SummaryText
-        {
-            get => _summaryText;
-            set
-            {
-                if (_summaryText == value) return;
-                _summaryText = value;
-                OnPropertyChanged();
-            }
-        }
+        private int _totalFiles;
+        private long _totalBytes;
+
+        public string SummaryText =>
+            string.Format(
+                Loc.SummaryFiles.Value,
+                _totalFiles,
+                FileSizeFormatter.Format(_totalBytes));
 
         public RelayCommand ScanCommand { get; }
         public RelayCommand CleanCommand { get; }
 
         public PrivacyViewModel()
         {
-            ScanCommand = new RelayCommand(
-                async () => await ScanAsync(),
-                () => !IsBusy);
+            ScanCommand = new RelayCommand(async () => await ScanAsync(), () => !IsBusy);
+            CleanCommand = new RelayCommand(async () => await CleanAsync(), () => !IsBusy && Items.Any(i => i.IsChecked));
 
-            CleanCommand = new RelayCommand(
-                async () => await CleanAsync(),
-                () => !IsBusy && Items.Any(i => i.IsChecked));
+            Localizer.LanguageChanged += () =>
+            {
+                OnPropertyChanged(nameof(SummaryText));
+            };
         }
 
         protected override void OnBusyChanged()
@@ -63,37 +45,34 @@ namespace WashinPC.ViewModels
             CleanCommand.RaiseCanExecuteChanged();
         }
 
-        // ================= LOGIC =================
-
         private async Task ScanAsync()
         {
             try
             {
-                SetBusyText("Сканирование приватности…");
-                SetStatus("Поиск приватных данных…");
+                SetBusyText(Loc.PrivacyScanning.Value);
+                SetStatus(Loc.PrivacySearching.Value);
                 IsBusy = true;
 
                 Items.Clear();
 
-                int totalFiles = 0;
-                long totalBytes = 0;
+                int files = 0;
+                long bytes = 0;
 
                 var groups = await Task.Run(() =>
-                    _engine.Scan(out totalFiles, out totalBytes));
-
+                    _engine.Scan(out files, out bytes));
 
                 foreach (var g in groups)
                 {
-                    Items.Add(new PrivacyItemView
+                    Items.Add(new SizeItemViewModel
                     {
-                        Name = g.GroupName,
-                        FileCount = g.Files.Count,
+                        Title = new LocalizedString(g.LocalizationKey),
                         TotalBytes = g.TotalBytes
                     });
                 }
 
-                SummaryText =
-                    $"Файлов: {totalFiles}, Размер: {FileSizeFormatter.Format(totalBytes)}";
+                _totalFiles = files;
+                _totalBytes = bytes;
+                OnPropertyChanged(nameof(SummaryText));
             }
             finally
             {
@@ -103,29 +82,41 @@ namespace WashinPC.ViewModels
 
         private async Task CleanAsync()
         {
-            var selectedFiles = Items
-                .Where(i => i.IsChecked)
-                .SelectMany(i =>
-                {
-                    var rule = _engine.Rules.FirstOrDefault(r => r.Name == i.Name);
-                    return rule != null ? rule.FilesProvider() : new string[0];
-                })
-                .ToList();
-
-            if (selectedFiles.Count == 0)
-                return;
-
             try
             {
-                SetBusyText("Очистка приватных данных…");
-                SetStatus("Удаление файлов…");
+                SetBusyText(Loc.StatusCleaning.Value);
+                SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                await Task.Run(() =>
-                    _engine.CleanSelected(selectedFiles, null));
+                var files = Items
+                    .Where(i => i.IsChecked)
+                    .SelectMany(i =>
+                    {
+                        var key = i.Title?.Key;
+                        var rule = _engine
+                            .GetType()
+                            .GetField("_rules", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                            ?.GetValue(_engine) as System.Collections.IEnumerable;
+
+                        return Enumerable.Empty<string>();
+                    })
+                    .ToList();
+
+                // Проще и безопаснее: пересканируем и удалим всё выбранное
+                int tmpFiles;
+                long tmpBytes;
+                var groups = _engine.Scan(out tmpFiles, out tmpBytes);
+
+                foreach (var g in groups)
+                {
+                    if (Items.Any(i => i.IsChecked && i.Title.Key == g.LocalizationKey))
+                        _engine.CleanSelected(g.Files);
+                }
 
                 Items.Clear();
-                SummaryText = "Файлов: 0, Размер: 0 MB";
+                _totalFiles = 0;
+                _totalBytes = 0;
+                OnPropertyChanged(nameof(SummaryText));
             }
             finally
             {

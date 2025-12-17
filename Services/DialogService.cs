@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Input;
-using WashinPC.UI;
+using WashinPC.Core.Mvvm;
+using WashinPC.UI.Dialogs;
 
-namespace WashinPC.UI.Dialogs
+namespace WashinPC.Services
 {
     // ===================== ENUMS =====================
 

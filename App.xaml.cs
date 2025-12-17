@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using WashinPC.Core;
+using WashinPC.Core.Utils;
 using WashinPC.Localization;
 
 

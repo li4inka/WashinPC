@@ -24,19 +24,17 @@
                                 </Grid.ColumnDefinitions>
 
                                 <CheckBox Grid.Column="0"
-                                          IsChecked="{Binding IsChecked}"
+                                          IsChecked="{Binding IsChecked, Mode=TwoWay}"
                                           Margin="0,0,10,0"
                                           VerticalAlignment="Center"/>
 
                                 <TextBlock Grid.Column="1"
-           VerticalAlignment="Center">
-    <Run Text="{Binding Name}" />
-    <Run Text=" " />
-    <Run Text="{Binding SizeText, Mode=OneWay}"
-         Foreground="{StaticResource Brush.TextMuted}" />
+                                           VerticalAlignment="Center">
+                                    <Run Text="{Binding Name, Mode=OneWay}" />
+                                    <Run Text=" " />
+                                    <Run Text="{Binding SizeText, Mode=OneWay}"
+                                         Foreground="{StaticResource Brush.TextMuted}" />
                                 </TextBlock>
-
-
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -74,11 +72,11 @@
 
                         <CheckBox Grid.Column="1"
                                   Content="{Binding Source={x:Static loc:Loc.ChkAggressive}, Path=Value}"
-                                  IsChecked="{Binding IsAggressive}"
+                                  IsChecked="{Binding IsAggressive, Mode=TwoWay}"
                                   Margin="20,0,0,0"/>
 
                         <TextBlock Grid.Column="3"
-                                   Text="{Binding SummaryText}"
+                                   Text="{Binding SummaryText, Mode=OneWay}"
                                    Foreground="{StaticResource Brush.TextMuted}"/>
                     </Grid>
                 </Border>

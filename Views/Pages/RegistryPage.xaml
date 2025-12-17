@@ -27,16 +27,17 @@
                                                 Binding="{Binding IsSelected}"/>
 
                         <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColCategory}, Path=Value}"
-                                            Binding="{Binding Category}"
-                                            Width="*"/>
+                    Binding="{Binding Category, Mode=OneWay}"
+                    Width="*"/>
 
                         <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColKey}, Path=Value}"
-                                            Binding="{Binding KeyPath}"
-                                            Width="2*"/>
+                    Binding="{Binding KeyPath, Mode=OneWay}"
+                    Width="2*"/>
 
                         <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColDetails}, Path=Value}"
-                                            Binding="{Binding Details}"
-                                            Width="2*"/>
+                    Binding="{Binding Details, Mode=OneWay}"
+                    Width="2*"/>
+
                     </DataGrid.Columns>
                 </DataGrid>
 

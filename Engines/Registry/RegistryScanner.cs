@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Win32;
+using WashinPC.Localization;
 
 namespace WashinPC.Engines.Registry
 {
@@ -15,15 +16,28 @@ namespace WashinPC.Engines.Registry
 
     public class RegistryIssue
     {
-        public string Category { get; set; }
+        // Keys for localization (for instant language switch)
+        public string CategoryKey { get; set; }
+        public string DetailsKey { get; set; }
+        public object[] DetailsArgs { get; set; }
+
         public RegistryHive Hive { get; set; }
         public RegistryView View { get; set; }
 
         public string KeyPath { get; set; }
         public string ValueName { get; set; }
+
+        // For compatibility (current language snapshot)
+        public string Category { get; set; }
         public string Details { get; set; }
 
         public Func<bool, RegistryFixResult> Fix { get; set; }
+
+        public void RefreshText()
+        {
+            Category = Localizer.T(CategoryKey);
+            Details = Localizer.T(DetailsKey, DetailsArgs);
+        }
     }
 
     /// <summary>
@@ -75,27 +89,33 @@ namespace WashinPC.Engines.Registry
         }
 
         private void AddIssue(
-            string category,
+            string categoryKey,
             RegistryHive hive,
             RegistryView view,
             string keyPathUi,
             string valueName,
-            string details,
+            string detailsKey,
+            object[] detailsArgs,
             Func<bool, RegistryFixResult> fix)
         {
             if (IsForbiddenKey(keyPathUi))
                 return;
 
-            _issues.Add(new RegistryIssue
+            var issue = new RegistryIssue
             {
-                Category = category,
+                CategoryKey = categoryKey,
+                DetailsKey = detailsKey,
+                DetailsArgs = detailsArgs,
+
                 Hive = hive,
                 View = view,
                 KeyPath = keyPathUi,
                 ValueName = valueName,
-                Details = details,
                 Fix = fix
-            });
+            };
+
+            issue.RefreshText(); // fill Category/Details in current language
+            _issues.Add(issue);
         }
 
         // ================= APP PATHS =================
@@ -125,12 +145,13 @@ namespace WashinPC.Engines.Registry
                                 if (File.Exists(exe)) continue;
 
                                 AddIssue(
-                                    "Application Paths",
+                                    "registry.cat.app_paths",
                                     RegistryHive.LocalMachine,
                                     view,
                                     $@"HKLM\{sub}\{sk}",
                                     "(Default)",
-                                    $"Путь не существует: {exe}",
+                                    "registry.details.path_missing",
+                                    new object[] { exe },
                                     dryRun =>
                                     {
                                         try
@@ -182,9 +203,8 @@ namespace WashinPC.Engines.Registry
                                         continue;
 
                                     uninstall = ExpandEnv(uninstall);
-                                    if (uninstall.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0)
-                                        continue;
 
+                                    // MSI uninstallers we do NOT touch
                                     if (uninstall.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0)
                                         continue;
 
@@ -195,12 +215,13 @@ namespace WashinPC.Engines.Registry
                                     var hiveStr = hive == RegistryHive.LocalMachine ? "HKLM" : "HKCU";
 
                                     AddIssue(
-                                        "Uninstall Entries",
+                                        "registry.cat.uninstall",
                                         hive,
                                         view,
                                         $@"{hiveStr}\{sub}\{sk}",
                                         "",
-                                        $"Отсутствует файл деинсталляции: {exe}",
+                                        "registry.details.uninstall_missing",
+                                        new object[] { exe },
                                         dryRun =>
                                         {
                                             try
@@ -252,12 +273,13 @@ namespace WashinPC.Engines.Registry
                                 continue;
 
                             AddIssue(
-                                "Shared DLLs",
+                                "registry.cat.shared_dlls",
                                 RegistryHive.LocalMachine,
                                 view,
                                 $@"HKLM\{sub}",
                                 valueName,
-                                $"Файл не существует: {path}",
+                                "registry.details.file_missing",
+                                new object[] { path },
                                 dryRun =>
                                 {
                                     try

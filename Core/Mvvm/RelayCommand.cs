@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace WashinPC.UI
+namespace WashinPC.Core.Mvvm
 {
     public class RelayCommand : ICommand
     {

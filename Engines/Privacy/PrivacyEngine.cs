@@ -1,154 +1,114 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using WashinPC.Engines.Cleaner;
+using WashinPC.Core.Utils;
 
 namespace WashinPC.Engines.Privacy
 {
-    public class PrivacyRule
+    public class PrivacyGroupResult
     {
-        public string Name { get; set; }
-        public Func<IEnumerable<string>> FilesProvider { get; set; }
+        public string LocalizationKey;
+        public List<string> Files = new List<string>();
+        public long TotalBytes;
     }
 
-    public class PrivacyEngine
+    public class PrivacyRule
     {
-        public List<PrivacyRule> Rules = new List<PrivacyRule>();
+        public string LocalizationKey;
+        public Func<IEnumerable<string>> FilesProvider;
+    }
+
+    public sealed class PrivacyEngine
+    {
+        private readonly List<PrivacyRule> _rules = new List<PrivacyRule>();
 
         public PrivacyEngine()
         {
             InitRules();
         }
 
-        public void InitRules()
+        private void InitRules()
         {
-            Rules.Clear();
-            // Chrome
-            Rules.Add(new PrivacyRule {
-                Name = "Google Chrome — History & Cookies",
-                FilesProvider = () => new[] {
-                    Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History"),
-                    Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Cookies")
-                }
-            });
-            // Edge (Chromium)
-            Rules.Add(new PrivacyRule {
-                Name = "Microsoft Edge — History & Cookies",
-                FilesProvider = () => new[] {
-                    Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History"),
-                    Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Cookies")
-                }
-            });
-            // Firefox (places.sqlite for history; cookies.sqlite for cookies)
-            Rules.Add(new PrivacyRule {
-                Name = "Mozilla Firefox — History & Cookies",
-                FilesProvider = () => FirefoxPrivacyFiles()
-            });
-            // Internet Explorer
-            Rules.Add(new PrivacyRule {
-                Name = "Internet Explorer — History & Cookies",
-                FilesProvider = () => new[] {
-                    Environment.ExpandEnvironmentVariables("%USERPROFILE%\\AppData\\Local\\Microsoft\\Windows\\History"),
-                    Environment.ExpandEnvironmentVariables("%USERPROFILE%\\AppData\\Local\\Microsoft\\Windows\\INetCache\\IE"),
-                    Environment.ExpandEnvironmentVariables("%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\Cookies"),
-                    Environment.ExpandEnvironmentVariables("%USERPROFILE%\\Local Settings\\History"),
-                    Environment.ExpandEnvironmentVariables("%USERPROFILE%\\Local Settings\\Temporary Internet Files"),
-                    Environment.ExpandEnvironmentVariables("%USERPROFILE%\\Cookies")
-                }
-            });
-            // Opera
-            Rules.Add(new PrivacyRule {
-                Name = "Opera — History & Cookies",
-                FilesProvider = () => new[] {
-                    Environment.ExpandEnvironmentVariables("%APPDATA%\\Opera Software\\Opera Stable\\History"),
-                    Environment.ExpandEnvironmentVariables("%APPDATA%\\Opera Software\\Opera Stable\\Cookies")
-                }
-            });
-        }
+            _rules.Clear();
 
-        private IEnumerable<string> FirefoxPrivacyFiles()
-        {
-            var appData = Utils.GetKnownFolderPath_XP_Compatible("AppData");
-            var profilesRoot = Path.Combine(appData, "Mozilla", "Firefox");
-            var profilesIni = Path.Combine(profilesRoot, "profiles.ini");
-            var list = new List<string>();
-            try
+            _rules.Add(new PrivacyRule
             {
-                if (File.Exists(profilesIni))
+                LocalizationKey = "privacy.chrome",
+                FilesProvider = () => new[]
                 {
-                    foreach (var line in Utils.SplitLines(File.ReadAllText(profilesIni)))
-                    {
-                        if (line.StartsWith("Path=", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var rel = line.Substring(5).Trim();
-                            string prof = rel;
-                            if (!Path.IsPathRooted(prof)) prof = Path.Combine(profilesRoot, rel);
-                            list.Add(Path.Combine(prof, "places.sqlite"));
-                            list.Add(Path.Combine(prof, "cookies.sqlite"));
-                        }
-                    }
+                    Environment.ExpandEnvironmentVariables(
+                        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History"),
+                    Environment.ExpandEnvironmentVariables(
+                        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Cookies")
                 }
-                else
+            });
+
+            _rules.Add(new PrivacyRule
+            {
+                LocalizationKey = "privacy.edge",
+                FilesProvider = () => new[]
                 {
-                    var profRoot = Path.Combine(profilesRoot, "Profiles");
-                    if (Directory.Exists(profRoot))
-                    {
-                        foreach (var d in Directory.GetDirectories(profRoot))
-                        {
-                            list.Add(Path.Combine(d, "places.sqlite"));
-                            list.Add(Path.Combine(d, "cookies.sqlite"));
-                        }
-                    }
+                    Environment.ExpandEnvironmentVariables(
+                        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History"),
+                    Environment.ExpandEnvironmentVariables(
+                        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Cookies")
                 }
-            } catch {}
-            return list;
+            });
         }
 
-        public List<GroupResult> Scan(out int totalFiles, out long totalBytes)
+        public List<PrivacyGroupResult> Scan(out int totalFiles, out long totalBytes)
         {
-            var results = new List<GroupResult>();
             totalFiles = 0;
             totalBytes = 0;
-            foreach (var rule in Rules)
+
+            var result = new List<PrivacyGroupResult>();
+
+            foreach (var rule in _rules)
             {
-                var gr = new GroupResult { GroupName = rule.Name };
-                foreach (var p in rule.FilesProvider())
+                var gr = new PrivacyGroupResult
                 {
-                    string path = Utils.ExpandPath(p);
-                    if (Directory.Exists(path))
+                    LocalizationKey = rule.LocalizationKey
+                };
+
+                foreach (var path in rule.FilesProvider())
+                {
+                    var p = Utils.ExpandPath(path);
+                    if (!File.Exists(p))
+                        continue;
+
+                    gr.Files.Add(p);
+                    try
                     {
-                        string[] files = new string[0];
-                        try { files = Directory.GetFiles(path, "*", SearchOption.AllDirectories); } catch {}
-                        foreach (var f in files)
-                        {
-                            gr.Files.Add(f);
-                            try { gr.TotalBytes += new FileInfo(f).Length; } catch {}
-                        }
+                        gr.TotalBytes += new FileInfo(p).Length;
                     }
-                    else if (File.Exists(path))
-                    {
-                        gr.Files.Add(path);
-                        try { gr.TotalBytes += new FileInfo(path).Length; } catch {}
-                    }
+                    catch { }
                 }
+
                 if (gr.Files.Count > 0)
                 {
-                    results.Add(gr);
+                    result.Add(gr);
                     totalFiles += gr.Files.Count;
                     totalBytes += gr.TotalBytes;
                 }
             }
-            return results;
+
+            return result;
         }
 
-        public int CleanSelected(IEnumerable<string> files, IList<string> log)
+        public void CleanSelected(IEnumerable<string> files)
         {
-            int deleted = 0;
             foreach (var f in files)
             {
-                if (Utils.SafeDeleteFile(f, log)) deleted++;
+                try
+                {
+                    if (File.Exists(f))
+                        File.Delete(f);
+                }
+                catch
+                {
+                    // как и в Cleaner — не падаем
+                }
             }
-            return deleted;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using WashinPC.Services;
 
 namespace WashinPC.UI.Dialogs
 {

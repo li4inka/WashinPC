@@ -1,26 +1,19 @@
-﻿using WashinPC.Core;
+﻿using WashinPC.Core.Mvvm;
+using WashinPC.Localization;
 
 namespace WashinPC.ViewModels.Common
 {
-    /// <summary>
-    /// Базовая VM для элементов со размером (Очистка / Приватность)
-    /// </summary>
-    public abstract class SizeItemViewModel : BaseViewModel
+    public sealed class SizeItemViewModel : BaseViewModel
     {
-        private string _name;
+        private bool _isChecked;
         private long _totalBytes;
-        private bool _isChecked = true;
 
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                if (_name == value) return;
-                _name = value;
-                OnPropertyChanged();
-            }
-        }
+        public LocalizedString Title { get; set; }
+
+        public string Name => Title?.Value ?? string.Empty;
+
+        public string SizeText =>
+            Core.Utils.FileSizeFormatter.Format(_totalBytes);
 
         public bool IsChecked
         {
@@ -45,7 +38,19 @@ namespace WashinPC.ViewModels.Common
             }
         }
 
-        public string SizeText =>
-            FileSizeFormatter.Format(TotalBytes);
+        public SizeItemViewModel()
+        {
+            // ПРАВИЛЬНО: подписываемся один раз
+            Localizer.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            // Сообщаем UI, что Name изменился
+            OnPropertyChanged(nameof(Name));
+        }
+
+        // ❌ НИКАКОГО финализатора
+        // ❌ НИКАКОЙ отписки здесь быть не должно
     }
 }

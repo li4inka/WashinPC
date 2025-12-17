@@ -1,4 +1,4 @@
-﻿namespace WashinPC.Core
+﻿namespace WashinPC.Core.Utils
 {
     public static class FileSizeFormatter
     {

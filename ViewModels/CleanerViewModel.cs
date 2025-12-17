@@ -1,123 +1,79 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using WashinPC.Core;
+using WashinPC.Core.Mvvm;
+using WashinPC.Core.Utils;
 using WashinPC.Engines.Cleaner;
+using WashinPC.Localization;
 using WashinPC.Services;
-using WashinPC.UI;
-using WashinPC.UI.Dialogs;
 using WashinPC.ViewModels.Common;
 
 namespace WashinPC.ViewModels
 {
-    public class CleanerItemView : SizeItemViewModel
-    {
-        private int _fileCount;
-
-        public int FileCount
-        {
-            get => _fileCount;
-            set
-            {
-                if (_fileCount == value) return;
-                _fileCount = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public class CleanerViewModel : BaseViewModel
+    public sealed class CleanerViewModel : BaseViewModel
     {
         private readonly CleanerEngine _engine = new CleanerEngine();
 
-        public ObservableCollection<CleanerItemView> Items { get; }
-            = new ObservableCollection<CleanerItemView>();
+        public ObservableCollection<SizeItemViewModel> Items { get; }
+            = new ObservableCollection<SizeItemViewModel>();
 
-        private string _summaryText = "Файлов: 0, Размер: 0 MB";
-        public string SummaryText
-        {
-            get => _summaryText;
-            set
-            {
-                if (_summaryText == value) return;
-                _summaryText = value;
-                OnPropertyChanged();
-            }
-        }
+        private int _totalFiles;
+        private long _totalBytes;
 
-        public bool AggressiveMode
-        {
-            get => _engine.AggressiveMode;
-            set
-            {
-                if (_engine.AggressiveMode == value) return;
-                _engine.AggressiveMode = value;
-                _engine.InitRules();
-                OnPropertyChanged();
-            }
-        }
-
-        // ================= COMMANDS =================
+        public string SummaryText =>
+            string.Format(
+                Loc.SummaryFiles.Value,
+                _totalFiles,
+                FileSizeFormatter.Format(_totalBytes));
 
         public RelayCommand ScanCommand { get; }
         public RelayCommand CleanCommand { get; }
-        public RelayCommand RecycleCommand { get; }
 
         public CleanerViewModel()
         {
-            ScanCommand = new RelayCommand(
-                async () => await ScanAsync(),
-                () => !IsBusy);
+            ScanCommand = new RelayCommand(async () => await ScanAsync(), () => !IsBusy);
+            CleanCommand = new RelayCommand(async () => await CleanAsync(), () => !IsBusy && Items.Any(i => i.IsChecked));
 
-            CleanCommand = new RelayCommand(
-                async () => await CleanAsync(),
-                () => !IsBusy && Items.Any(i => i.IsChecked));
-
-            RecycleCommand = new RelayCommand(
-                EmptyRecycleBin,
-                () => !IsBusy);
+            Localizer.LanguageChanged += () =>
+            {
+                OnPropertyChanged(nameof(SummaryText));
+            };
         }
 
         protected override void OnBusyChanged()
         {
             ScanCommand.RaiseCanExecuteChanged();
             CleanCommand.RaiseCanExecuteChanged();
-            RecycleCommand.RaiseCanExecuteChanged();
         }
-
-        // ================= LOGIC =================
 
         private async Task ScanAsync()
         {
             try
             {
-                SetBusyText("Сканирование очистки…");
-                SetStatus("Поиск временных файлов…");
+                SetBusyText(Loc.CleanerScanning.Value);
+                SetStatus(Loc.CleanerSearching.Value);
                 IsBusy = true;
 
                 Items.Clear();
 
-                int totalFiles = 0;
-                long totalBytes = 0;
+                int files = 0;
+                long bytes = 0;
 
                 var groups = await Task.Run(() =>
-                    _engine.ScanDetailed(out totalFiles, out totalBytes));
-
+                    _engine.ScanDetailed(out files, out bytes));
 
                 foreach (var g in groups)
                 {
-                    Items.Add(new CleanerItemView
+                    Items.Add(new SizeItemViewModel
                     {
-                        Name = g.GroupName,
-                        FileCount = g.Files.Count,
+                        Title = new LocalizedString(g.LocalizationKey),
                         TotalBytes = g.TotalBytes
                     });
                 }
 
-                SummaryText =
-                    $"Файлов: {totalFiles}, Размер: {FileSizeFormatter.Format(totalBytes)}";
-
-                SetStatus($"Найдено файлов: {totalFiles}");
+                _totalFiles = files;
+                _totalBytes = bytes;
+                OnPropertyChanged(nameof(SummaryText));
             }
             finally
             {
@@ -127,59 +83,22 @@ namespace WashinPC.ViewModels
 
         private async Task CleanAsync()
         {
-            if (DialogService.ShowConfirm(
-                    "Очистить выбранные файлы без возможности восстановления?")
-                != DialogResult.Yes)
+            if (DialogService.ShowConfirm(Loc.CleanerConfirmClean.Value) != DialogResult.Yes)
                 return;
 
             try
             {
-                SetBusyText("Очистка файлов…");
-                SetStatus("Удаление временных файлов…");
+                SetBusyText(Loc.StatusCleaning.Value);
+                SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                int deleted = 0;
+                int deleted;
                 await Task.Run(() => _engine.Clean(out deleted));
 
-
                 Items.Clear();
-                SummaryText = "Файлов: 0, Размер: 0 MB";
-
-                SetStatus($"Удалено файлов: {deleted}");
-            }
-            finally
-            {
-                IsBusy = false;
-            }
-        }
-
-        private void EmptyRecycleBin()
-        {
-            if (Native.IsRecycleBinEmpty())
-            {
-                DialogService.ShowInfo("Корзина уже пуста.");
-                return;
-            }
-
-            if (DialogService.ShowConfirm(
-                    "Очистить корзину?\nВсе файлы будут удалены без возможности восстановления.")
-                != DialogResult.Yes)
-                return;
-
-            try
-            {
-                SetBusyText("Очистка корзины…");
-                SetStatus("Удаление файлов из корзины…");
-                IsBusy = true;
-
-                if (!Native.EmptyRecycleBinQuiet())
-                {
-                    DialogService.ShowWarning(
-                        "Не удалось очистить корзину.\nПопробуйте запустить программу от имени администратора.");
-                    return;
-                }
-
-                SetStatus("Корзина успешно очищена");
+                _totalFiles = 0;
+                _totalBytes = 0;
+                OnPropertyChanged(nameof(SummaryText));
             }
             finally
             {

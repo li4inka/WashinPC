@@ -6,7 +6,7 @@ using Microsoft.Win32;
 using WashinPC.Core;
 
 
-namespace WashinPC
+namespace WashinPC.Core.Utils
 {
     public static class Utils
     {
