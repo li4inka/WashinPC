@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using WashinPC.Core.Mvvm;
 using WashinPC.UI.Dialogs;
 
@@ -73,6 +74,29 @@ namespace WashinPC.Services
         public ICommand YesCommand { get; }
         public ICommand NoCommand { get; }
         public ICommand OkCommand { get; }
+        public Brush AccentBrush
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case DialogType.Info:
+                        return new SolidColorBrush(Color.FromRgb(58, 122, 254));
+
+                    case DialogType.Confirm:
+                        return new SolidColorBrush(Color.FromRgb(10, 91, 211));
+
+                    case DialogType.Warning:
+                        return new SolidColorBrush(Color.FromRgb(230, 167, 0));
+
+                    case DialogType.Error:
+                        return new SolidColorBrush(Color.FromRgb(209, 52, 56));
+
+                    default:
+                        return Brushes.Transparent;
+                }
+            }
+        }
 
         public DialogViewModel(
             string title,
@@ -102,5 +126,6 @@ namespace WashinPC.Services
                 close();
             });
         }
+
     }
 }
