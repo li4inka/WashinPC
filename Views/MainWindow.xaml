@@ -84,21 +84,28 @@
 
                             <!-- NAV -->
                             <ListBox x:Name="Sidebar"
-                                     Grid.Row="0"
-                                     Style="{StaticResource SidebarList}"
-                                     ItemContainerStyle="{StaticResource SidebarItem}"
-                                     SelectionChanged="Sidebar_SelectionChanged">
+         Grid.Row="0"
+         Style="{StaticResource SidebarList}"
+         ItemContainerStyle="{StaticResource SidebarItem}"
+         SelectionChanged="Sidebar_SelectionChanged">
 
-                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabCleaner}, Path=Value}"
-                                             Tag="Cleaner"/>
-                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}"
-                                             Tag="Privacy"/>
-                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}"
-                                             Tag="Registry"/>
-                                <ListBoxItem Content="{Binding Source={x:Static loc:Loc.TabSettings}, Path=Value}"
-                                             Tag="Settings"/>
+                                <ListBoxItem Tag="Cleaner"
+                 Content="{Binding Source={x:Static loc:Loc.TabCleaner}, Path=Value}"/>
+
+                                <ListBoxItem Tag="Privacy"
+                 Content="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}"/>
+
+                                <ListBoxItem Tag="Registry"
+                 Content="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}"/>
+
+                                <!-- NEW TOOL -->
+                                <ListBoxItem Tag="ContextMenu"
+                 Content="{Binding Source={x:Static loc:Loc.TabContextMenu}, Path=Value}"/>
+
+                                <ListBoxItem Tag="Settings"
+                                            Content="{Binding Source={x:Static loc:Loc.TabSettings}, Path=Value}"/>
+
                             </ListBox>
-
                             <!-- SIDEBAR INFO -->
                             <StackPanel Grid.Row="1"
                                         Margin="14,10"

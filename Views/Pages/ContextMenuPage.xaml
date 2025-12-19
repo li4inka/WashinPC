@@ -1,0 +1,179 @@
+<UserControl x:Class="WashinPC.Views.Pages.ContextMenuPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:WashinPC.Localization">
+
+    <Grid Margin="14">
+        <!-- ONE CARD FOR GRID + BOTTOM BAR (same as Registry) -->
+        <Border Style="{StaticResource ContentCard}">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- ================= TABLE ================= -->
+                <DataGrid Grid.Row="0"
+                          ItemsSource="{Binding Items}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          HeadersVisibility="Column"
+                          BorderThickness="0"
+                          GridLinesVisibility="None"
+                          RowBackground="White"
+                          AlternatingRowBackground="#FAFAFA"
+                          SelectionMode="Extended"
+                          SelectionUnit="FullRow"
+                          SnapsToDevicePixels="True">
+
+                    <!-- ===== RESOURCES (copied from Registry) ===== -->
+                    <DataGrid.Resources>
+
+                        <!-- Flat scrollbar -->
+                        <Style TargetType="ScrollBar"
+                               BasedOn="{StaticResource FlatScrollBar}"/>
+
+                        <!-- Flat column header -->
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="#F5F6F8"/>
+                            <Setter Property="Foreground" Value="#333333"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="Padding" Value="8,6"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridColumnHeader">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                            <ContentPresenter
+                                                Margin="{TemplateBinding Padding}"
+                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#ECEFF3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+
+                        <!-- Cell style: no borders -->
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="6,4"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        </Style>
+
+                        <!-- Row style: thin separator -->
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="#E6E8EC"/>
+                            <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F3F7FD"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#E9F2FF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+
+                    </DataGrid.Resources>
+
+                    <!-- ===== COLUMNS (keep your localization keys) ===== -->
+                    <DataGrid.Columns>
+
+                        <!-- "Off." checkbox -->
+                        <DataGridCheckBoxColumn Width="60"
+                                                Header="{Binding Source={x:Static loc:Loc.ContextMenuColDisable}, Path=Value}"
+                                                Binding="{Binding Disable}"/>
+
+                        <DataGridTextColumn Width="2*"
+                                            Header="{Binding Source={x:Static loc:Loc.ContextMenuColName}, Path=Value}"
+                                            Binding="{Binding Name}"/>
+
+                        <DataGridTextColumn Width="*"
+                                            Header="{Binding Source={x:Static loc:Loc.ContextMenuColTarget}, Path=Value}"
+                                            Binding="{Binding Target}"/>
+
+                        <DataGridTextColumn Width="*"
+                                            Header="{Binding Source={x:Static loc:Loc.ContextMenuColKind}, Path=Value}"
+                                            Binding="{Binding Kind}"/>
+
+                        <DataGridTextColumn Width="*"
+                                            Header="{Binding Source={x:Static loc:Loc.ContextMenuColScope}, Path=Value}"
+                                            Binding="{Binding Scope}"/>
+
+                        <DataGridTextColumn Width="Auto"
+                                            Header="{Binding Source={x:Static loc:Loc.ContextMenuColSource}, Path=Value}"
+                                            Binding="{Binding Source}"/>
+
+                        <DataGridTextColumn Width="2*"
+                                            Header="{Binding Source={x:Static loc:Loc.ContextMenuColRegistry}, Path=Value}"
+                                            Binding="{Binding RegistryPath}"/>
+
+                    </DataGrid.Columns>
+
+                </DataGrid>
+
+                <!-- ================= BOTTOM BAR (same as Registry) ================= -->
+                <Border Grid.Row="1"
+                        Margin="12,10,12,12"
+                        Padding="12"
+                        Background="#FAFAFA"
+                        CornerRadius="10"
+                        SnapsToDevicePixels="True">
+
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="16"
+                                          ShadowDepth="0"
+                                          Opacity="0.18"/>
+                    </Border.Effect>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- BUTTONS -->
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
+                                    Command="{Binding ScanCommand}"/>
+
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="{Binding Source={x:Static loc:Loc.ContextMenuBtnApply}, Path=Value}"
+                                    Command="{Binding ApplyCommand}"/>
+                        </StackPanel>
+
+                        <!-- SUMMARY -->
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Summary}"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource Brush.TextMuted}"/>
+                    </Grid>
+
+                </Border>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

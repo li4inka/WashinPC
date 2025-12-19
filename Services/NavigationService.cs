@@ -58,6 +58,9 @@ namespace WashinPC.Services
                 case PageType.Settings:
                     return new SettingsPage();
 
+                case PageType.ContextMenu: 
+                    return new WashinPC.Views.Pages.ContextMenuPage();
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
@@ -78,6 +81,9 @@ namespace WashinPC.Services
 
                 case PageType.Settings:
                     return new SettingsViewModel();
+
+                case PageType.ContextMenu:
+                    return new ContextMenuViewModel();
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);

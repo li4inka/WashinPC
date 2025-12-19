@@ -5,6 +5,7 @@
         Cleaner,
         Privacy,
         Registry,
+        ContextMenu,
         Settings
     }
 }

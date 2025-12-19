@@ -131,6 +131,24 @@ namespace WashinPC.Localization
                 { "privacy.chrome", "Google Chrome" },
                 { "privacy.edge", "Microsoft Edge" },
 
+                // ContextMenu
+                { "tab.contextmenu", "Контекстное меню" },
+
+                { "contextmenu.summary", "Элементов: {0}" },
+                { "contextmenu.applied", "Применено изменений: {0}" },
+
+                { "contextmenu.col.disable", "Откл." },
+                { "contextmenu.col.name", "Действие" },
+                { "contextmenu.col.target", "Цель" },
+                { "contextmenu.col.kind", "Тип" },
+                { "contextmenu.col.scope", "Область" },
+                { "contextmenu.col.source", "Источник" },
+                { "contextmenu.col.registry", "Реестр" },
+
+                { "contextmenu.btn.apply", "Применить" },
+                { "btn.disable", "Отключить" },
+                { "btn.enable", "Включить" },
+
             };
 
         private static readonly Dictionary<string, string> EN =
@@ -222,6 +240,25 @@ namespace WashinPC.Localization
                 { "cleaner.chrome_cache", "Google Chrome Cache" },
                 { "privacy.chrome", "Google Chrome" },
                 { "privacy.edge", "Microsoft Edge" },
+
+                // ContextMenu
+                { "tab.contextmenu", "Context Menu" },
+
+                { "contextmenu.summary", "Items: {0}" },
+                { "contextmenu.applied", "Changes applied: {0}" },
+
+                { "contextmenu.col.disable", "Off" },
+                { "contextmenu.col.name", "Action" },
+                { "contextmenu.col.target", "Target" },
+                { "contextmenu.col.kind", "Type" },
+                { "contextmenu.col.scope", "Scope" },
+                { "contextmenu.col.source", "Source" },
+                { "contextmenu.col.registry", "Registry" },
+
+                { "contextmenu.btn.apply", "Apply" },
+                { "btn.disable", "Disable" },
+                { "btn.enable", "Enable" },
+
             };
 
         public static void Initialize()
@@ -346,6 +383,22 @@ namespace WashinPC.Localization
         public static readonly LocalizedString RegistryConfirmFix = new LocalizedString("registry.confirm.fix");
         public static readonly LocalizedString RegistryFixedWithBackup = new LocalizedString("registry.fixed.with.backup");
 
+        // ===== Context Menu =====
+        public static readonly LocalizedString TabContextMenu = new LocalizedString("tab.contextmenu");
+
+        public static readonly LocalizedString ContextMenuColDisable = new LocalizedString("contextmenu.col.disable");
+        public static readonly LocalizedString ContextMenuColName = new LocalizedString("contextmenu.col.name");
+        public static readonly LocalizedString ContextMenuColTarget = new LocalizedString("contextmenu.col.target");
+        public static readonly LocalizedString ContextMenuColKind = new LocalizedString("contextmenu.col.kind");
+        public static readonly LocalizedString ContextMenuColScope = new LocalizedString("contextmenu.col.scope");
+        public static readonly LocalizedString ContextMenuColSource = new LocalizedString("contextmenu.col.source");
+        public static readonly LocalizedString ContextMenuColRegistry = new LocalizedString("contextmenu.col.registry");
+
+        public static readonly LocalizedString ContextMenuBtnApply = new LocalizedString("contextmenu.btn.apply");
+        public static readonly LocalizedString BtnDisable = new LocalizedString("btn.disable");
+        public static readonly LocalizedString BtnEnable = new LocalizedString("btn.enable");
+
+
         public static void RefreshAll()
         {
             TabCleaner.Refresh();
@@ -407,6 +460,22 @@ namespace WashinPC.Localization
             RegistryNoSelection.Refresh();
             RegistryConfirmFix.Refresh();
             RegistryFixedWithBackup.Refresh();
+
+            TabContextMenu.Refresh();
+
+            ContextMenuColDisable.Refresh();
+            ContextMenuColName.Refresh();
+            ContextMenuColTarget.Refresh();
+            ContextMenuColKind.Refresh();
+            ContextMenuColScope.Refresh();
+            ContextMenuColSource.Refresh();
+            ContextMenuColRegistry.Refresh();
+
+            ContextMenuBtnApply.Refresh();
+            BtnDisable.Refresh();
+            BtnEnable.Refresh();
+
+
         }
     }
 }
