@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Input;
 using WashinPC.Core.Mvvm;
 using WashinPC.Localization;
 
@@ -13,7 +14,7 @@ namespace WashinPC.ViewModels
 
         public bool IsChecked
         {
-            get => _isChecked;
+            get { return _isChecked; }
             set
             {
                 if (_isChecked == value) return;
@@ -22,20 +23,19 @@ namespace WashinPC.ViewModels
             }
         }
 
-        // 🔹 ЛОКАЛИЗОВАННОЕ НАЗВАНИЕ КАТЕГОРИИ
-        public string Title => Localizer.T(CategoryKey);
+        public string Title
+        {
+            get { return Localizer.T(CategoryKey); }
+        }
 
-        // 🔹 ЛОКАЛИЗОВАННЫЙ ЗАГОЛОВОК ГРУППЫ
         public string RiskTitle
         {
             get
             {
                 if (Risk == RegistryRiskLevel.Safe)
                     return Localizer.T("registry.risk.safe");
-
                 if (Risk == RegistryRiskLevel.Advanced)
                     return Localizer.T("registry.risk.advanced");
-
                 if (Risk == RegistryRiskLevel.Dangerous)
                     return Localizer.T("registry.risk.dangerous");
 
@@ -43,22 +43,42 @@ namespace WashinPC.ViewModels
             }
         }
 
-        public bool IsDangerous => Risk == RegistryRiskLevel.Dangerous;
+        public bool IsDangerous
+        {
+            get { return Risk == RegistryRiskLevel.Dangerous; }
+        }
+
+        // 🔹 КОМАНДА ДЛЯ ?
+        public ICommand InfoCommand { get; }
+
+        private readonly Action<string> _showInfo;
 
         public RegistryCategoryView(
             string categoryKey,
             RegistryRiskLevel risk,
-            bool enabled)
+            bool enabled,
+            Action<string> showInfo)
         {
             CategoryKey = categoryKey;
             Risk = risk;
             _isChecked = enabled;
+            _showInfo = showInfo;
 
-            Localizer.LanguageChanged += () =>
-            {
-                OnPropertyChanged(nameof(Title));
-                OnPropertyChanged(nameof(RiskTitle));
-            };
+            InfoCommand = new RelayCommand(ShowInfo);
+
+            Localizer.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void ShowInfo()
+        {
+            if (_showInfo != null)
+                _showInfo(CategoryKey);
+        }
+
+        private void OnLanguageChanged()
+        {
+            OnPropertyChanged(nameof(Title));
+            OnPropertyChanged(nameof(RiskTitle));
         }
     }
 }

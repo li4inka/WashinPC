@@ -119,6 +119,26 @@ namespace WashinPC.Localization
             ("registry.cat.start_menu", "Меню Пуск"),
             ("registry.cat.sound_events", "Звуковые события"),
 
+            // Registry info (ЕДИНЫЙ БЛОК)
+            ("registry.info.title", "Внимание"),
+
+            ("registry.cat.info.registry.cat.active_x",
+             "ActiveX и COM-записи. Удаление может привести к неработоспособности программ."),
+
+            ("registry.cat.info.registry.cat.fonts",
+             "Записи установленных шрифтов. Ошибочное удаление может повлиять на интерфейс Windows."),
+
+            ("registry.cat.info.registry.cat.mui_cache",
+             "Кэш локализованных ресурсов. Обычно безопасно, но может замедлить первый запуск программ."),
+
+            ("registry.cat.info.registry.cat.start_menu",
+             "Записи меню «Пуск». Удаление может привести к исчезновению ярлыков."),
+
+            ("registry.cat.info.registry.cat.sound_events",
+             "Системные звуковые события. Может повлиять на звуки Windows."),
+
+
+
             // Context menu
             ("contextmenu.summary", "Элементов: {0}"),
             ("contextmenu.applied", "Применено изменений: {0}"),
@@ -207,6 +227,25 @@ namespace WashinPC.Localization
             ("registry.cat.mui_cache", "MUI Cache"),
             ("registry.cat.start_menu", "Start Menu"),
             ("registry.cat.sound_events", "Sound Events"),
+
+            // Registry info (ЕДИНЫЙ БЛОК)
+            ("registry.info.title", "Warning"),
+
+            ("registry.cat.info.registry.cat.active_x",
+             "ActiveX и COM. Removing it may cause programs to stop working.."),
+
+            ("registry.cat.info.registry.cat.fonts",
+             "Entries of installed fonts. Incorrect removal may affect the Windows interface."),
+
+            ("registry.cat.info.registry.cat.mui_cache",
+             "Localized resource cache. Generally safe, but may slow down initial program launches."),
+
+            ("registry.cat.info.registry.cat.start_menu",
+             "Start Menu entries. Deleting them may cause shortcuts to disappear."),
+
+            ("registry.cat.info.registry.cat.sound_events",
+             "System sound events. May affect Windows sounds."),
+
 
             ("contextmenu.summary", "Items: {0}"),
             ("contextmenu.applied", "Changes applied: {0}"),

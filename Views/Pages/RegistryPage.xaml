@@ -49,10 +49,11 @@
                                           IsChecked="{Binding IsChecked}"/>
 
                                 <!-- ? Dangerous -->
-                                <TextBlock Text=" ?"
-                                            Foreground="#C62828">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
+                                <Button Content="?"
+        Command="{Binding InfoCommand}">
+                                    <Button.Style>
+                                        <Style TargetType="Button"
+               BasedOn="{StaticResource InfoIconButton}">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsDangerous}" Value="True">
@@ -60,8 +61,8 @@
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                    </Button.Style>
+                                </Button>
 
                             </StackPanel>
                         </DataTemplate>

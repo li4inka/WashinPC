@@ -8,6 +8,7 @@ using WashinPC.Core;
 using WashinPC.Core.Mvvm;
 using WashinPC.Engines.Registry;
 using WashinPC.Localization;
+using WashinPC.Services;
 
 namespace WashinPC.ViewModels
 {
@@ -158,8 +159,10 @@ namespace WashinPC.ViewModels
         }
         private void ShowCategoryInfo(string categoryKey)
         {
-            // TODO: позже подключим DialogService
-            SetStatus(Localizer.T("registry.cat.info." + categoryKey));
+            DialogService.ShowWarning(
+                Localizer.T("registry.cat.info." + categoryKey), Localizer.T("registry.info.title")
+                
+            );
         }
 
         private void Add(string key, RegistryRiskLevel risk, bool enabled)
@@ -167,7 +170,8 @@ namespace WashinPC.ViewModels
             Categories.Add(new RegistryCategoryView(
                 key,
                 risk,
-                enabled
+                enabled,
+                ShowCategoryInfo
             ));
         }
 
