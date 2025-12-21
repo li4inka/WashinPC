@@ -1,208 +1,280 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using WashinPC.Core;
 using WashinPC.Core.Mvvm;
 using WashinPC.Engines.Registry;
 using WashinPC.Localization;
-using WashinPC.Services;
 
 namespace WashinPC.ViewModels
 {
-    public class RegistryViewModel : BaseViewModel
+    public sealed class RegistryIssueView : BaseViewModel
     {
-        private readonly RegistryScanner _scanner = new RegistryScanner();
+        private bool _isSelected;
 
-        public class Issue
+        public RegistryIssue Model { get; }
+
+        public RegistryIssueView(RegistryIssue model)
         {
-            public bool IsSelected { get; set; } = true;
+            Model = model ?? throw new ArgumentNullException(nameof(model));
+            _isSelected = true;
+        }
 
-            public string Category { get; private set; }
-            public string KeyPath { get; set; }
-            public string ValueName { get; set; }
-            public string Details { get; private set; }
-
-            public RegistryIssue Source { get; set; }
-
-            public void RefreshText()
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
             {
-                if (Source == null)
-                    return;
-
-                Source.RefreshText();
-                Category = Source.Category;
-                Details = Source.Details;
+                if (_isSelected == value) return;
+                _isSelected = value;
+                OnPropertyChanged();
             }
         }
 
-        public ObservableCollection<Issue> Items { get; }
-            = new ObservableCollection<Issue>();
+        public string Category => Model.Category;
+        public string KeyPath => Model.KeyPath;
+        public string Details =>
+                        Localizer.T(Model.Details);
 
-        private int _issuesCount;
 
-        public string SummaryText =>
-            string.Format(Loc.SummaryRegistry.Value, _issuesCount);
+        public void RefreshText()
+        {
+            Model.RefreshText();
+            OnPropertyChanged(nameof(Category));
+            OnPropertyChanged(nameof(Details));
+        }
+    }
 
-        public bool CreateBackup { get; set; } = true;
+    public sealed class RegistryViewModel : BaseViewModel
+    {
+        private readonly RegistryScanner _scanner = new RegistryScanner();
+
+        public ObservableCollection<RegistryCategoryView> Categories { get; }
+            = new ObservableCollection<RegistryCategoryView>();
+
+        public ObservableCollection<RegistryIssueView> Items { get; }
+            = new ObservableCollection<RegistryIssueView>();
+
+        private bool _createBackup = true;
+        public bool CreateBackup
+        {
+            get => _createBackup;
+            set
+            {
+                if (_createBackup == value) return;
+                _createBackup = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _summaryText;
+        public string SummaryText
+        {
+            get => _summaryText;
+            set
+            {
+                if (_summaryText == value) return;
+                _summaryText = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Три-состояния для "выделить всё" в шапке таблицы.
+        /// </summary>
+        private bool? _allSelectedState = true;
+        public bool? AllSelectedState
+        {
+            get => _allSelectedState;
+            set
+            {
+                if (_allSelectedState == value) return;
+                _allSelectedState = value;
+                OnPropertyChanged();
+
+                if (value == null) return;
+
+                foreach (var it in Items)
+                    it.IsSelected = value.Value;
+
+                UpdateAllSelectedState();
+            }
+        }
 
         public ICommand ScanCommand { get; }
         public ICommand FixCommand { get; }
 
         public RegistryViewModel()
         {
-            ScanCommand = new RelayCommand(
-                async () => await ScanAsync(),
-                () => !IsBusy);
+            ScanCommand = new RelayCommand(async () => await ScanAsync(), () => !IsBusy);
+            FixCommand = new RelayCommand(async () => await FixAsync(), () => !IsBusy);
 
-            FixCommand = new RelayCommand(
-                Fix,
-                () => !IsBusy && Items.Any(i => i.IsSelected));
+            BuildCategories();
 
-            // мгновенное обновление Category/Details/Summary при смене языка
-            Localizer.LanguageChanged += OnLanguageChanged;
+            // обновляем локализацию списка найденных проблем и заголовков групп
+            Localizer.LanguageChanged += () =>
+            {
+                foreach (var c in Categories)
+                {
+                    // в категории уже подписка и refresh, но оставим безопасно
+                    // на случай если где-то были созданы иначе
+                }
+
+                foreach (var it in Items)
+                    it.RefreshText();
+
+                UpdateSummary();
+            };
+
+            UpdateSummary();
         }
 
-        private void OnLanguageChanged()
+        private void BuildCategories()
         {
-            foreach (var i in Items)
-                i.RefreshText();
+            Categories.Clear();
 
-            // заставим DataGrid обновить строки (Items не INotifyPropertyChanged)
-            var snap = Items.ToList();
-            Items.Clear();
-            foreach (var x in snap)
-                Items.Add(x);
+            // ключи должны совпадать с тем, что кладёт RegistryScanner в issue.CategoryKey
+            Add("registry.cat.uninstall", RegistryRiskLevel.Safe, true);
+            Add("registry.cat.shared_dlls", RegistryRiskLevel.Safe, true);
+            Add("registry.cat.unused_file_ext", RegistryRiskLevel.Safe, true);
+            Add("registry.cat.help_files", RegistryRiskLevel.Safe, true);
+            Add("registry.cat.obsolete_software", RegistryRiskLevel.Safe, true);
 
-            OnPropertyChanged(nameof(SummaryText));
+            Add("registry.cat.applications", RegistryRiskLevel.Advanced, false);
+            Add("registry.cat.type_libraries", RegistryRiskLevel.Advanced, false);
+            Add("registry.cat.installer_refs", RegistryRiskLevel.Advanced, false);
+            Add("registry.cat.startup", RegistryRiskLevel.Advanced, false);
+
+            Add("registry.cat.active_x", RegistryRiskLevel.Dangerous, false);
+            Add("registry.cat.fonts", RegistryRiskLevel.Dangerous, false);
+            Add("registry.cat.mui_cache", RegistryRiskLevel.Dangerous, false);
+            Add("registry.cat.start_menu", RegistryRiskLevel.Dangerous, false);
+            Add("registry.cat.sound_events", RegistryRiskLevel.Dangerous, false);
+
+            // если у тебя есть ещё категории как в CCleaner — добавляй сюда по этому же принципу.
+        }
+        private void ShowCategoryInfo(string categoryKey)
+        {
+            // TODO: позже подключим DialogService
+            SetStatus(Localizer.T("registry.cat.info." + categoryKey));
         }
 
-        protected override void OnBusyChanged()
+        private void Add(string key, RegistryRiskLevel risk, bool enabled)
         {
-            (ScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            Categories.Add(new RegistryCategoryView(
+                key,
+                risk,
+                enabled
+            ));
         }
 
         private async Task ScanAsync()
         {
             try
             {
-                SetBusyText(Loc.RegistryScanning.Value);
-                SetStatus(Loc.RegistrySearching.Value);
                 IsBusy = true;
+                SetStatus(Localizer.T("registry.scanning"));
 
                 Items.Clear();
 
-                var issues = await Task.Run(() => _scanner.ScanAll());
+                // 1) сканируем всё, что умеет сканер
+                var all = await Task.Run(() => _scanner.ScanAll().ToList());
 
-                foreach (var i in issues)
+                // 2) фильтруем по выбранным категориям (чтобы выбор реально влиял на результат)
+                var enabledKeys = new HashSet<string>(
+                    Categories.Where(c => c.IsChecked).Select(c => c.CategoryKey)
+                );
+
+                var filtered = all.Where(i => enabledKeys.Contains(i.CategoryKey)).ToList();
+
+                foreach (var issue in filtered)
                 {
-                    var vm = new Issue
-                    {
-                        KeyPath = i.KeyPath,
-                        ValueName = i.ValueName,
-                        Source = i
-                    };
-                    vm.RefreshText();
-
-                    Items.Add(vm);
+                    issue.RefreshText(); // подтянуть тексты под текущий язык
+                    Items.Add(new RegistryIssueView(issue));
                 }
 
-                _issuesCount = Items.Count;
-                OnPropertyChanged(nameof(SummaryText));
-
-                SetStatus(string.Format(Loc.SummaryRegistry.Value, _issuesCount));
+                UpdateAllSelectedState();
+                UpdateSummary();
             }
             finally
             {
                 IsBusy = false;
+                SetStatus(string.Empty);
             }
         }
 
-        private void Fix()
+        private async Task FixAsync()
         {
-            var selected = Items
-                .Where(i => i.IsSelected && i.Source != null)
-                .ToList();
-
-            if (selected.Count == 0)
-            {
-                DialogService.ShowInfo(Loc.RegistryNoSelection.Value);
-                return;
-            }
-
-            if (DialogService.ShowConfirm(Loc.RegistryConfirmFix.Value) != DialogResult.Yes)
-                return;
-
             try
             {
-                SetBusyText(Loc.StatusCleaning.Value);
-                SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                int fixedCount = 0;
-                int backupCount = 0;
-
-                foreach (var item in selected)
+                var selected = Items.Where(i => i.IsSelected).ToList();
+                if (selected.Count == 0)
                 {
-                    try
-                    {
-                        if (CreateBackup)
-                        {
-                            var subKeyPath = ExtractSubKeyPath(item.KeyPath);
-                            if (!string.IsNullOrWhiteSpace(subKeyPath))
-                            {
-                                var regFile = Engines.Registry.RegistryBackup.ExportKey(
-                                    item.Source.Hive,
-                                    item.Source.View,
-                                    subKeyPath);
-
-                                if (!string.IsNullOrWhiteSpace(regFile))
-                                    backupCount++;
-                            }
-                        }
-
-                        if (item.Source.Fix != null &&
-                            item.Source.Fix(false) == RegistryFixResult.Fixed)
-                        {
-                            fixedCount++;
-                        }
-                    }
-                    catch
-                    {
-                        // как CCleaner — идём дальше
-                    }
+                    // без новых ключей Loc.* — используем существующий подход через Localizer.T
+                    SetStatus(Localizer.T("registry.nothing_selected"));
+                    return;
                 }
 
-                if (CreateBackup && backupCount > 0)
-                    SetStatus(string.Format(
-                        Loc.RegistryFixedWithBackup.Value,
-                        fixedCount,
-                        backupCount));
-                else
-                    SetStatus(string.Format(
-                        Loc.RegistryFixed.Value,
-                        fixedCount));
+                SetStatus(Localizer.T("registry.fixing"));
+
+                await Task.Run(() =>
+                {
+                    // ВАЖНО:
+                    // Реальная логика бэкапа/фиксинга должна быть в RegistryScanner/Engine.
+                    // Здесь мы просто вызываем Fix для выбранных.
+                    foreach (var item in selected)
+                    {
+                        try
+                        {
+                            item.Model.Fix?.Invoke(CreateBackup);
+                        }
+                        catch
+                        {
+                            // не роняем процесс исправления
+                        }
+                    }
+                });
+
+                SetStatus(Localizer.T("registry.fixed", selected.Count));
+
+                // после фикса перезапускаем скан (чтобы обновить список)
+                await ScanAsync();
             }
             finally
             {
                 IsBusy = false;
             }
-
-            _ = ScanAsync();
         }
 
-        private static string ExtractSubKeyPath(string keyPathUi)
+        private void UpdateAllSelectedState()
         {
-            if (string.IsNullOrWhiteSpace(keyPathUi))
-                return null;
+            if (Items.Count == 0)
+            {
+                _allSelectedState = false;
+                OnPropertyChanged(nameof(AllSelectedState));
+                return;
+            }
 
-            if (keyPathUi.StartsWith("HKLM\\"))
-                return keyPathUi.Substring("HKLM\\".Length);
+            var all = Items.All(i => i.IsSelected);
+            var none = Items.All(i => !i.IsSelected);
 
-            if (keyPathUi.StartsWith("HKCU\\"))
-                return keyPathUi.Substring("HKCU\\".Length);
+            bool? state = all ? true : (none ? (bool?)false : null);
 
-            return null;
+            if (_allSelectedState != state)
+            {
+                _allSelectedState = state;
+                OnPropertyChanged(nameof(AllSelectedState));
+            }
+        }
+
+        private void UpdateSummary()
+        {
+            SummaryText = Localizer.T("summary.registry", Items.Count);
         }
     }
 }

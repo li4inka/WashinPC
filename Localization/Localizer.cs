@@ -15,14 +15,11 @@ namespace WashinPC.Localization
     {
         private static Lang _current = Lang.EN;
 
-        /// <summary>
-        /// Событие смены языка (для списков/результатов, которые не входят в Loc.*)
-        /// </summary>
         public static event Action LanguageChanged;
 
         public static Lang Current
         {
-            get { return _current; }
+            get => _current;
             set
             {
                 if (_current == value)
@@ -31,290 +28,243 @@ namespace WashinPC.Localization
                 _current = value;
                 AppSettings.Language = value == Lang.RU ? "ru" : "en";
 
-                // обновляем статические LocalizedString из Loc
                 Loc.RefreshAll();
-
-                // уведомляем VM, чтобы они могли обновить динамические строки
-                var handler = LanguageChanged;
-                if (handler != null)
-                    handler();
+                LanguageChanged?.Invoke();
             }
         }
 
-        private static readonly Dictionary<string, string> RU =
-            new Dictionary<string, string>
+        // ===================== SAFE DICT =====================
+
+        private static Dictionary<string, string> SafeDict(params (string k, string v)[] items)
+        {
+            var dict = new Dictionary<string, string>();
+            foreach (var (k, v) in items)
             {
-                { "app.title", "WashinPC" },
-                { "tab.cleaner", "Очистка" },
-                { "tab.registry", "Реестр" },
-                { "tab.privacy", "Приватность" },
-                { "tab.settings", "Настройки" },
+                if (!dict.ContainsKey(k))
+                    dict[k] = v;
+            }
+            return dict;
+        }
 
-                { "btn.scan", "Сканировать" },
-                { "btn.clean", "Очистить" },
-                { "btn.fix", "Исправить" },
-                { "btn.recycle", "Очистить Корзину" },
+        // ===================== RU =====================
 
-                { "btn.ok", "OK" },
-                { "btn.yes", "Да" },
-                { "btn.no", "Нет" },
+        private static readonly Dictionary<string, string> RU = SafeDict(
+            // App / Tabs
+            ("app.title", "WashinPC"),
+            ("tab.cleaner", "Очистка"),
+            ("tab.registry", "Реестр"),
+            ("tab.privacy", "Приватность"),
+            ("tab.settings", "Настройки"),
+            ("tab.contextmenu", "Контекстное меню"),
 
-                { "chk.aggr", "Агрессивный режим" },
-                { "chk.backup", "Создать резервную копию" },
+            // Buttons
+            ("btn.scan", "Сканировать"),
+            ("btn.clean", "Очистить"),
+            ("btn.fix", "Исправить"),
+            ("btn.recycle", "Очистить корзину"),
+            ("btn.ok", "OK"),
+            ("btn.yes", "Да"),
+            ("btn.no", "Нет"),
+            ("btn.enable", "Включить"),
+            ("btn.disable", "Отключить"),
 
-                { "settings.language", "Язык интерфейса" },
-                { "settings.instant.apply", "Изменения применяются сразу" },
+            // Checkboxes
+            ("chk.aggr", "Агрессивный режим"),
+            ("chk.backup", "Создать резервную копию"),
 
-                { "admin.required", "Требуются права администратора" },
-                { "app.error", "Ошибка" },
+            // Columns
+            ("col.source", "Источник"),
+            ("col.size", "Размер"),
+            ("col.category", "Категория"),
+            ("col.key", "Ключ"),
+            ("col.details", "Детали"),
 
-                { "col.source", "Источник" },
-                { "col.size", "Размер" },
-                { "col.category", "Категория" },
-                { "col.key", "Ключ" },
-                { "col.details", "Детали" },
+            // Status / Summary
+            ("status.scanning", "Сканирование…"),
+            ("status.searching", "Поиск…"),
+            ("status.cleaning", "Очистка…"),
+            ("summary.files", "Файлов: {0}, Размер: {1}"),
+            ("summary.registry", "Найдено записей: {0}"),
 
-                { "version.label", "Версия: " },
-                { "build.label", "Сборка: " },
-                { "copyright.label", "© Kulich Software" },
+            // Cleaner
+            ("cleaner.scanning", "Сканирование очистки…"),
+            ("cleaner.searching", "Поиск временных файлов…"),
+            ("cleaner.deleted", "Удалено файлов: {0}"),
 
-                { "status.scanning", "Сканирование…" },
-                { "status.searching", "Поиск…" },
-                { "status.cleaning", "Очистка…" },
+            // Privacy
+            ("privacy.scanning", "Сканирование приватности…"),
+            ("privacy.searching", "Поиск приватных данных…"),
 
-                { "cleaner.scanning", "Сканирование очистки…" },
-                { "cleaner.searching", "Поиск временных файлов…" },
-                { "cleaner.deleted", "Удалено файлов: {0}" },
+            // Registry
+            ("registry.categories", "Категории очистки"),
+            ("registry.scanning", "Сканирование реестра…"),
+            ("registry.searching", "Поиск проблемных записей реестра…"),
+            ("registry.fixed", "Исправлено проблем реестра: {0}"),
+            ("registry.no.selection", "Нет выбранных проблем для исправления."),
+            ("registry.confirm.fix", "Исправить выбранные проблемы реестра?\nРекомендуется создать резервные копии."),
 
-                { "privacy.scanning", "Сканирование приватности…" },
-                { "privacy.searching", "Поиск приватных данных…" },
+            // Registry categories (ЕДИНЫЙ БЛОК)
+            ("registry.cat.uninstall", "Записи деинсталляции"),
+            ("registry.cat.shared_dlls", "Shared DLLs"),
+            ("registry.cat.unused_file_ext", "Неиспользуемые расширения файлов"),
+            ("registry.cat.help_files", "Файлы справки"),
+            ("registry.cat.obsolete_software", "Устаревшее ПО"),
+            ("registry.cat.applications", "Приложения"),
+            ("registry.cat.type_libraries", "Type Libraries"),
+            ("registry.cat.installer_refs", "Installer References"),
+            ("registry.cat.startup", "Автозагрузка"),
+            ("registry.cat.active_x", "ActiveX и Class Issues"),
+            ("registry.cat.fonts", "Шрифты"),
+            ("registry.cat.mui_cache", "Кэш MUI"),
+            ("registry.cat.start_menu", "Меню Пуск"),
+            ("registry.cat.sound_events", "Звуковые события"),
 
-                { "registry.scanning", "Сканирование реестра…" },
-                { "registry.searching", "Поиск проблемных записей реестра…" },
-                { "registry.fixed", "Исправлено проблем реестра: {0}" },
+            // Context menu
+            ("contextmenu.summary", "Элементов: {0}"),
+            ("contextmenu.applied", "Применено изменений: {0}"),
+            ("contextmenu.col.disable", "Откл."),
+            ("contextmenu.col.name", "Действие"),
+            ("contextmenu.col.target", "Цель"),
+            ("contextmenu.col.kind", "Тип"),
+            ("contextmenu.col.scope", "Область"),
+            ("contextmenu.col.source", "Источник"),
+            ("contextmenu.col.registry", "Реестр"),
+            ("contextmenu.btn.apply", "Применить"),
 
-                // ===== SUMMARY =====
-                { "summary.files", "Файлов: {0}, Размер: {1}" },
-                { "summary.registry", "Найдено записей: {0}" },
+            ("cleaner.user_temp", "Пользовательский TEMP"),
+            ("cleaner.windows_temp", "Windows TEMP"),
+            ("cleaner.prefetch", "Prefetch"),
+            ("cleaner.recent", "Недавние документы"),
 
-                // ===== CLEANER =====
-                { "cleaner.confirm.clean", "Очистить выбранные файлы без возможности восстановления?" },
-                { "cleaner.recycle.empty", "Корзина уже пуста." },
-                { "cleaner.recycle.confirm", "Очистить корзину?\nВсе файлы будут удалены без возможности восстановления." },
-                { "cleaner.recycle.scanning", "Очистка корзины…" },
-                { "cleaner.recycle.cleaning", "Удаление файлов из корзины…" },
-                { "cleaner.recycle.failed", "Не удалось очистить корзину.\nПопробуйте запустить программу от имени администратора." },
-                { "cleaner.recycle.done", "Корзина успешно очищена" },
+            ("privacy.chrome", "Google Chrome"),
+            ("privacy.edge", "Microsoft Edge"),
 
-                // ===== REGISTRY =====
-                { "registry.no.selection", "Нет выбранных проблем для исправления." },
-                { "registry.confirm.fix", "Исправить выбранные проблемы реестра?\nРекомендуется создать резервные копии." },
-                { "registry.fixed.with.backup", "Исправлено: {0}. Бэкапов: {1}" },
+            ("settings.language", "Язык интерфейса"),
+            ("settings.instant.apply", "Изменения применяются сразу")
 
-                // Registry categories
-                { "registry.cat.app_paths", "Application Paths" },
-                { "registry.cat.uninstall", "Записи деинсталляции" },
-                { "registry.cat.shared_dlls", "Shared DLLs" },
+        );
 
-                // Registry details templates
-                { "registry.details.path_missing", "Путь не существует: {0}" },
-                { "registry.details.uninstall_missing", "Отсутствует файл деинсталляции: {0}" },
-                { "registry.details.file_missing", "Файл не существует: {0}" },
+        // ===================== EN =====================
 
-                // Cleaner groups (у тебя уже были)
-                { "cleaner.user_temp", "Пользовательский TEMP" },
-                { "cleaner.windows_temp", "Windows Temp" },
-                { "cleaner.prefetch", "Prefetch" },
-                { "cleaner.recent", "Список последних документов" },
-                { "cleaner.edge_cache", "Edge (Chromium) Cache" },
-                { "cleaner.chrome_cache", "Google Chrome Cache" },
-                { "privacy.chrome", "Google Chrome" },
-                { "privacy.edge", "Microsoft Edge" },
+        private static readonly Dictionary<string, string> EN = SafeDict(
+            ("app.title", "WashinPC"),
+            ("tab.cleaner", "Cleaner"),
+            ("tab.registry", "Registry"),
+            ("tab.privacy", "Privacy"),
+            ("tab.settings", "Settings"),
+            ("tab.contextmenu", "Context Menu"),
 
-                // ContextMenu
-                { "tab.contextmenu", "Контекстное меню" },
+            ("btn.scan", "Scan"),
+            ("btn.clean", "Clean"),
+            ("btn.fix", "Fix"),
+            ("btn.recycle", "Empty Recycle Bin"),
+            ("btn.ok", "OK"),
+            ("btn.yes", "Yes"),
+            ("btn.no", "No"),
+            ("btn.enable", "Enable"),
+            ("btn.disable", "Disable"),
 
-                { "contextmenu.summary", "Элементов: {0}" },
-                { "contextmenu.applied", "Применено изменений: {0}" },
+            ("chk.aggr", "Aggressive mode"),
+            ("chk.backup", "Create backup"),
 
-                { "contextmenu.col.disable", "Откл." },
-                { "contextmenu.col.name", "Действие" },
-                { "contextmenu.col.target", "Цель" },
-                { "contextmenu.col.kind", "Тип" },
-                { "contextmenu.col.scope", "Область" },
-                { "contextmenu.col.source", "Источник" },
-                { "contextmenu.col.registry", "Реестр" },
+            ("col.source", "Source"),
+            ("col.size", "Size"),
+            ("col.category", "Category"),
+            ("col.key", "Key"),
+            ("col.details", "Details"),
 
-                { "contextmenu.btn.apply", "Применить" },
-                { "btn.disable", "Отключить" },
-                { "btn.enable", "Включить" },
+            ("status.scanning", "Scanning…"),
+            ("status.searching", "Searching…"),
+            ("status.cleaning", "Cleaning…"),
+            ("summary.files", "Files: {0}, Size: {1}"),
+            ("summary.registry", "Records found: {0}"),
 
-            };
+            ("cleaner.scanning", "Cleaner scan…"),
+            ("cleaner.searching", "Searching temporary files…"),
+            ("cleaner.deleted", "Deleted files: {0}"),
 
-        private static readonly Dictionary<string, string> EN =
-            new Dictionary<string, string>
-            {
-                { "app.title", "WashinPC" },
-                { "tab.cleaner", "Cleaner" },
-                { "tab.registry", "Registry" },
-                { "tab.privacy", "Privacy" },
-                { "tab.settings", "Settings" },
+            ("privacy.scanning", "Privacy scan…"),
+            ("privacy.searching", "Searching privacy data…"),
 
-                { "btn.scan", "Scan" },
-                { "btn.clean", "Clean" },
-                { "btn.fix", "Fix" },
-                { "btn.recycle", "Empty Recycle Bin" },
+            ("registry.categories", "Registry categories"),
+            ("registry.scanning", "Registry scan…"),
+            ("registry.searching", "Searching registry issues…"),
+            ("registry.fixed", "Registry issues fixed: {0}"),
+            ("registry.no.selection", "No registry issues selected."),
+            ("registry.confirm.fix", "Fix selected registry issues?\nIt is recommended to create backups."),
 
-                { "btn.ok", "OK" },
-                { "btn.yes", "Yes" },
-                { "btn.no", "No" },
+            ("registry.cat.uninstall", "Uninstall entries"),
+            ("registry.cat.shared_dlls", "Shared DLLs"),
+            ("registry.cat.unused_file_ext", "Unused file extensions"),
+            ("registry.cat.help_files", "Help files"),
+            ("registry.cat.obsolete_software", "Obsolete software"),
+            ("registry.cat.applications", "Applications"),
+            ("registry.cat.type_libraries", "Type Libraries"),
+            ("registry.cat.installer_refs", "Installer References"),
+            ("registry.cat.startup", "Startup"),
+            ("registry.cat.active_x", "ActiveX and Class Issues"),
+            ("registry.cat.fonts", "Fonts"),
+            ("registry.cat.mui_cache", "MUI Cache"),
+            ("registry.cat.start_menu", "Start Menu"),
+            ("registry.cat.sound_events", "Sound Events"),
 
-                { "chk.aggr", "Aggressive mode" },
-                { "chk.backup", "Create backup" },
+            ("contextmenu.summary", "Items: {0}"),
+            ("contextmenu.applied", "Changes applied: {0}"),
+            ("contextmenu.col.disable", "Off"),
+            ("contextmenu.col.name", "Action"),
+            ("contextmenu.col.target", "Target"),
+            ("contextmenu.col.kind", "Type"),
+            ("contextmenu.col.scope", "Scope"),
+            ("contextmenu.col.source", "Source"),
+            ("contextmenu.col.registry", "Registry"),
+            ("contextmenu.btn.apply", "Apply"),
 
-                { "settings.language", "Interface language" },
-                { "settings.instant.apply", "Changes are applied instantly" },
+            ("cleaner.user_temp", "User TEMP files"),
+            ("cleaner.windows_temp", "Windows TEMP files"),
+            ("cleaner.prefetch", "Prefetch files"),
+            ("cleaner.recent", "Recent documents"),
 
-                { "admin.required", "Administrator privileges required" },
-                { "app.error", "Error" },
+            ("privacy.chrome", "Google Chrome"),
+            ("privacy.edge", "Microsoft Edge"),
 
-                { "col.source", "Source" },
-                { "col.size", "Size" },
-                { "col.category", "Category" },
-                { "col.key", "Key" },
-                { "col.details", "Details" },
+            ("settings.language", "Interface language"),
+            ("settings.instant.apply", "Changes are applied instantly")
 
-                { "version.label", "Version: " },
-                { "build.label", "Build: " },
-                { "copyright.label", "© Kulich Software" },
+        );
 
-                { "status.scanning", "Scanning…" },
-                { "status.searching", "Searching…" },
-                { "status.cleaning", "Cleaning…" },
-
-                { "cleaner.scanning", "Cleaner scan…" },
-                { "cleaner.searching", "Searching temporary files…" },
-                { "cleaner.deleted", "Deleted files: {0}" },
-
-                { "privacy.scanning", "Privacy scan…" },
-                { "privacy.searching", "Searching privacy data…" },
-
-                { "registry.scanning", "Registry scan…" },
-                { "registry.searching", "Searching registry issues…" },
-                { "registry.fixed", "Registry issues fixed: {0}" },
-
-                // ===== SUMMARY =====
-                { "summary.files", "Files: {0}, Size: {1}" },
-                { "summary.registry", "Records found: {0}" },
-
-                // ===== CLEANER =====
-                { "cleaner.confirm.clean", "Clean selected files without the possibility of recovery?" },
-                { "cleaner.recycle.empty", "Recycle Bin is already empty." },
-                { "cleaner.recycle.confirm", "Empty Recycle Bin?\nAll files will be permanently deleted." },
-                { "cleaner.recycle.scanning", "Cleaning Recycle Bin…" },
-                { "cleaner.recycle.cleaning", "Removing files from Recycle Bin…" },
-                { "cleaner.recycle.failed", "Failed to empty Recycle Bin.\nTry running the program as administrator." },
-                { "cleaner.recycle.done", "Recycle Bin successfully emptied" },
-
-                // ===== REGISTRY =====
-                { "registry.no.selection", "No registry issues selected to fix." },
-                { "registry.confirm.fix", "Fix selected registry issues?\nIt is recommended to create backups." },
-                { "registry.fixed.with.backup", "Fixed: {0}. Backups: {1}" },
-
-                // Registry categories
-                { "registry.cat.app_paths", "Application Paths" },
-                { "registry.cat.uninstall", "Uninstall entries" },
-                { "registry.cat.shared_dlls", "Shared DLLs" },
-
-                // Registry details templates
-                { "registry.details.path_missing", "Path does not exist: {0}" },
-                { "registry.details.uninstall_missing", "Uninstaller file missing: {0}" },
-                { "registry.details.file_missing", "File does not exist: {0}" },
-
-                // Cleaner groups (у тебя уже были)
-                { "cleaner.user_temp", "User TEMP files" },
-                { "cleaner.windows_temp", "Windows TEMP files" },
-                { "cleaner.prefetch", "Prefetch files" },
-                { "cleaner.recent", "Recent documents list" },
-                { "cleaner.edge_cache", "Microsoft Edge (Chromium) Cache" },
-                { "cleaner.chrome_cache", "Google Chrome Cache" },
-                { "privacy.chrome", "Google Chrome" },
-                { "privacy.edge", "Microsoft Edge" },
-
-                // ContextMenu
-                { "tab.contextmenu", "Context Menu" },
-
-                { "contextmenu.summary", "Items: {0}" },
-                { "contextmenu.applied", "Changes applied: {0}" },
-
-                { "contextmenu.col.disable", "Off" },
-                { "contextmenu.col.name", "Action" },
-                { "contextmenu.col.target", "Target" },
-                { "contextmenu.col.kind", "Type" },
-                { "contextmenu.col.scope", "Scope" },
-                { "contextmenu.col.source", "Source" },
-                { "contextmenu.col.registry", "Registry" },
-
-                { "contextmenu.btn.apply", "Apply" },
-                { "btn.disable", "Disable" },
-                { "btn.enable", "Enable" },
-
-            };
+        // ===================== API =====================
 
         public static void Initialize()
         {
             try
             {
                 string saved = AppSettings.Language;
-
-                if (string.Equals(saved, "ru", StringComparison.OrdinalIgnoreCase))
-                    _current = Lang.RU;
-                else if (string.Equals(saved, "en", StringComparison.OrdinalIgnoreCase))
-                    _current = Lang.EN;
-                else
-                    AutoDetectLanguage();
+                _current = saved == "ru" ? Lang.RU : Lang.EN;
             }
             catch
             {
-                AutoDetectLanguage();
+                _current = Lang.EN;
             }
 
             Loc.RefreshAll();
         }
 
-        public static void AutoDetectLanguage()
-        {
-            try
-            {
-                string lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-                _current = lang == "ru" ? Lang.RU : Lang.EN;
-                AppSettings.Language = _current == Lang.RU ? "ru" : "en";
-            }
-            catch
-            {
-                _current = Lang.EN;
-                AppSettings.Language = "en";
-            }
-        }
-
         public static string T(string key, params object[] args)
         {
-            Dictionary<string, string> dict = Current == Lang.RU ? RU : EN;
-
-            string value;
-            if (!dict.TryGetValue(key, out value))
+            var dict = Current == Lang.RU ? RU : EN;
+            if (!dict.TryGetValue(key, out var value))
                 value = key;
 
-            if (args != null && args.Length > 0)
-                return string.Format(value, args);
-
-            return value;
+            return args != null && args.Length > 0
+                ? string.Format(value, args)
+                : value;
         }
     }
 
-    // ===================== LOC =====================
 
-    public static class Loc
+// ===================== LOC =====================
+
+public static class Loc
     {
         public static readonly LocalizedString TabCleaner = new LocalizedString("tab.cleaner");
         public static readonly LocalizedString TabPrivacy = new LocalizedString("tab.privacy");
@@ -361,6 +311,8 @@ namespace WashinPC.Localization
         public static readonly LocalizedString PrivacySearching = new LocalizedString("privacy.searching");
 
         // ===== REGISTRY =====
+        public static readonly LocalizedString RegistryCategories = new LocalizedString("registry.categories");
+
         public static readonly LocalizedString RegistryScanning = new LocalizedString("registry.scanning");
         public static readonly LocalizedString RegistrySearching = new LocalizedString("registry.searching");
         public static readonly LocalizedString RegistryFixed = new LocalizedString("registry.fixed");

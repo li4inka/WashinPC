@@ -3,17 +3,81 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:WashinPC.Localization">
 
-    <Grid Margin="14">
-        <!-- ONE CARD FOR GRID + BOTTOM BAR -->
-        <Border Style="{StaticResource ContentCard}">
+    <UserControl.Resources>
+        <CollectionViewSource x:Key="CategoriesView"
+                              Source="{Binding Categories}">
+            <CollectionViewSource.GroupDescriptions>
+                <!-- ?? group by loc -->
+                <PropertyGroupDescription PropertyName="RiskTitle"/>
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+    </UserControl.Resources>
 
+    <Grid Margin="14">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT -->
+        <Border Grid.Column="0" Style="{StaticResource ContentCard}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Resources>
+                    <Style TargetType="ScrollBar"
+                           BasedOn="{StaticResource FlatScrollBar}"/>
+                </ScrollViewer.Resources>
+
+                <ItemsControl ItemsSource="{Binding Source={StaticResource CategoriesView}}">
+                    <ItemsControl.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Margin="12,12,12,6"
+                                               FontWeight="SemiBold"
+                                               Foreground="#666"
+                                               Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ItemsControl.GroupStyle>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="12,4">
+                                <CheckBox Content="{Binding Title}"
+                                          IsChecked="{Binding IsChecked}"/>
+
+                                <!-- ? Dangerous -->
+                                <TextBlock Text=" ?"
+                                            Foreground="#C62828">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDangerous}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- RIGHT -->
+        <Border Grid.Column="2" Style="{StaticResource ContentCard}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- ================= TABLE ================= -->
                 <DataGrid Grid.Row="0"
                           ItemsSource="{Binding Items}"
                           AutoGenerateColumns="False"
@@ -24,77 +88,15 @@
                           RowBackground="White"
                           AlternatingRowBackground="#FAFAFA"
                           SelectionMode="Extended"
-                          SelectionUnit="FullRow"
-                          SnapsToDevicePixels="True">
+                          SelectionUnit="FullRow">
 
-                    <!-- ===== RESOURCES ===== -->
                     <DataGrid.Resources>
-
-                        <!-- Flat scrollbar -->
                         <Style TargetType="ScrollBar"
                                BasedOn="{StaticResource FlatScrollBar}"/>
-
-                        <!-- Flat column header -->
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#F5F6F8"/>
-                            <Setter Property="Foreground" Value="#333333"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="Padding" Value="8,6"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="#E0E0E0"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
-                            <Setter Property="SnapsToDevicePixels" Value="True"/>
-
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="DataGridColumnHeader">
-                                        <Border Background="{TemplateBinding Background}"
-                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                BorderThickness="{TemplateBinding BorderThickness}">
-                                            <ContentPresenter
-                                                Margin="{TemplateBinding Padding}"
-                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#ECEFF3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-
-                        <!-- Cell style: no borders -->
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Padding" Value="6,4"/>
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
-                        </Style>
-
-                        <!-- Row style: single thin separator -->
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="#E6E8EC"/>
-                            <Setter Property="SnapsToDevicePixels" Value="True"/>
-
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#F3F7FD"/>
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#E9F2FF"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-
                     </DataGrid.Resources>
 
-                    <!-- ===== COLUMNS ===== -->
                     <DataGrid.Columns>
+
                         <DataGridCheckBoxColumn Width="40"
                                                 Binding="{Binding IsSelected}"/>
 
@@ -113,23 +115,14 @@
                             Binding="{Binding Details}"
                             Width="2*"/>
                     </DataGrid.Columns>
-
                 </DataGrid>
 
-                <!-- ================= BOTTOM BAR ================= -->
+                <!-- BOTTOM -->
                 <Border Grid.Row="1"
                         Margin="12,10,12,12"
                         Padding="12"
                         Background="#FAFAFA"
-                        CornerRadius="10"
-                        SnapsToDevicePixels="True">
-
-                    <Border.Effect>
-                        <DropShadowEffect
-                            BlurRadius="16"
-                            ShadowDepth="0"
-                            Opacity="0.18"/>
-                    </Border.Effect>
+                        CornerRadius="10">
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -139,10 +132,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- BUTTONS -->
                         <StackPanel Grid.Column="0"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center">
+                                    Orientation="Horizontal">
                             <Button Style="{StaticResource PrimaryButton}"
                                     Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
                                     Command="{Binding ScanCommand}"/>
@@ -152,21 +143,17 @@
                                     Command="{Binding FixCommand}"/>
                         </StackPanel>
 
-                        <!-- OPTION -->
                         <CheckBox Grid.Column="1"
                                   Content="{Binding Source={x:Static loc:Loc.ChkBackup}, Path=Value}"
                                   IsChecked="{Binding CreateBackup}"
-                                  Margin="20,0,0,0"
-                                  VerticalAlignment="Center"/>
+                                  Margin="20,0,0,0"/>
 
-                        <!-- SUMMARY -->
                         <TextBlock Grid.Column="3"
                                    Text="{Binding SummaryText}"
-                                   VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextMuted}"/>
+                                   Foreground="{StaticResource Brush.TextMuted}"
+                                   VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
-
             </Grid>
         </Border>
     </Grid>
