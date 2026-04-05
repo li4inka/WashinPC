@@ -5,6 +5,8 @@
         AnyFile,
         Folder,
         DirectoryBackground,
+        DesktopBackground,
+        Shortcut,
         Drive,
         Unknown
     }
@@ -30,6 +32,8 @@
 
         // Unique id used for disable/enable (for ShellEx it's usually CLSID; for verbs we use full key path)
         public string RegistryPath { get; set; }
+        public string RelativeKeyPath { get; set; }
+        public string BlockedId { get; set; }
 
         public string Source { get; set; }        // e.g. "HKCU" / "HKLM"
         public bool IsEnabled { get; set; }

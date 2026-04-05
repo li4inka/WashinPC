@@ -97,9 +97,31 @@
                     <DataGrid.Columns>
 
                         <!-- "Off." checkbox -->
-                        <DataGridCheckBoxColumn Width="60"
-                                                Header="{Binding Source={x:Static loc:Loc.ContextMenuColDisable}, Path=Value}"
-                                                Binding="{Binding Disable}"/>
+                        <DataGridTemplateColumn Width="60"
+                                                Header="{Binding Source={x:Static loc:Loc.ContextMenuColDisable}, Path=Value}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              IsChecked="{Binding Disable, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsToggleSupported}"
+                                              ToolTip="{Binding ToggleDisabledReason}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Width="60"
+                                                Header="{Binding Source={x:Static loc:Loc.ContextMenuColDelete}, Path=Value}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              IsChecked="{Binding Delete, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsDeleteSupported}"
+                                              ToolTip="{Binding DeleteDisabledReason}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
                         <DataGridTextColumn Width="2*"
                                             Header="{Binding Source={x:Static loc:Loc.ContextMenuColName}, Path=Value}"
@@ -156,7 +178,7 @@
                                     VerticalAlignment="Center">
 
                             <Button Style="{StaticResource PrimaryButton}"
-                                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
+                                    Content="{Binding Source={x:Static loc:Loc.ContextMenuBtnRefresh}, Path=Value}"
                                     Command="{Binding ScanCommand}"/>
 
                             <Button Style="{StaticResource PrimaryButton}"
