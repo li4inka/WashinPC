@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
+    <None Include="tests\**\*" Exclude="tests\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="app.manifest" />
   </ItemGroup>
 
@@ -25,3 +30,4 @@
     </PackageReference>
   </ItemGroup>
 </Project>
+

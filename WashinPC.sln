@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "washinpc", "washinpc.csproj", "{ABB9B9D6-86CD-8B14-5006-FF0B19EF1339}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WashinPC.Tests", "tests\WashinPC.Tests\WashinPC.Tests.csproj", "{8241D7AB-BF93-4ED8-89D9-7A64A1D61CA3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{ABB9B9D6-86CD-8B14-5006-FF0B19EF1339}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABB9B9D6-86CD-8B14-5006-FF0B19EF1339}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABB9B9D6-86CD-8B14-5006-FF0B19EF1339}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8241D7AB-BF93-4ED8-89D9-7A64A1D61CA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8241D7AB-BF93-4ED8-89D9-7A64A1D61CA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8241D7AB-BF93-4ED8-89D9-7A64A1D61CA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8241D7AB-BF93-4ED8-89D9-7A64A1D61CA3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
