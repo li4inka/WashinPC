@@ -53,6 +53,7 @@ packages/
 
 # NuGet v3 cache (global)
 .nuget/
+.dotnet/
 
 ############################################
 # OS / IDE noise

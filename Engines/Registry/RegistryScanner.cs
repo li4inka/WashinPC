@@ -10,6 +10,7 @@ namespace WashinPC.Engines.Registry
     public enum RegistryFixResult
     {
         None,
+        Skipped,
         Fixed,
         Failed
     }
@@ -31,7 +32,7 @@ namespace WashinPC.Engines.Registry
         public string Category { get; set; }
         public string Details { get; set; }
 
-        public Func<bool, RegistryFixResult> Fix { get; set; }
+        public Func<RegistryFixContext, RegistryFixResult> Fix { get; set; }
 
         public void RefreshText()
         {
@@ -51,32 +52,23 @@ namespace WashinPC.Engines.Registry
         {
             _issues.Clear();
 
-            // 15 categories (как у CCleaner по смыслу)
-            ScanApplicationPaths();           // 1
-            ScanUninstallEntries();           // 2
-            ScanSharedDlls();                 // 3
-            ScanUnusedFileExtensions();       // 4
-            ScanActiveXCom();                 // 5
-            ScanTypeLibraries();              // 6
-            ScanApplications();               // 7
-            ScanFonts();                      // 8
-            ScanHelpFiles();                  // 9
-            ScanInstallerReferences();        // 10
-            ScanObsoleteSoftware();           // 11
-            ScanStartupEntries();             // 12
-            ScanStartMenuOrdering();          // 13
-            ScanMuiCache();                   // 14
-            ScanSoundEvents();                // 15
-            ScanWindowsServices();            // 16 (но всего категорий всё равно 15 — services как отдельная, см. ниже)
-            // ^ Важно: я оставляю Services как 15-ю, а “Sound events” будет 14-й,
-            // но по UI у тебя будет ровно 15 чекбоксов (мы не показываем лишнего — см. ViewModel).
-
-            // Чтобы было ровно 15 категорий (как просил):
-            // Мы объединяем "Sound Events" и "Help Files"? Нет.
-            // Реально — делаем ровно 15 категорий и сканим 15:
-            // УДАЛЯЕМ лишний вызов ниже и оставляем Services как 15.
-            // (Оставляю закомментированным, чтобы не было 16-й категории).
-            // ScanWindowsServices();
+            ScanApplicationPaths();
+            ScanUninstallEntries();
+            ScanSharedDlls();
+            ScanUnusedFileExtensions();
+            ScanActiveXCom();
+            ScanTypeLibraries();
+            ScanApplications();
+            ScanFonts();
+            ScanHelpFiles();
+            ScanInstallerReferences();
+            ScanObsoleteSoftware();
+            ScanStartupEntries();
+            ScanStartMenuOrdering();
+            ScanMuiCache();
+            ScanSoundEvents();
+            // ScanWindowsServices() intentionally excluded by default
+            // to keep behavior conservative across Win7-Win11.
 
             return _issues.AsReadOnly();
         }
@@ -135,7 +127,7 @@ namespace WashinPC.Engines.Registry
             string valueName,
             string detailsKey,
             object[] detailsArgs,
-            Func<bool, RegistryFixResult> fix)
+            Func<bool, RegistryFixResult> legacyFix)
         {
             var issue = new RegistryIssue
             {
@@ -147,11 +139,58 @@ namespace WashinPC.Engines.Registry
                 View = view,
                 KeyPath = keyPathUi,
                 ValueName = valueName,
-                Fix = fix
+                Fix = ctx => ExecuteLegacyFix(ctx, hive, view, keyPathUi, legacyFix)
             };
 
             issue.RefreshText();
             _issues.Add(issue);
+        }
+
+        private static RegistryFixResult ExecuteLegacyFix(
+            RegistryFixContext context,
+            RegistryHive hive,
+            RegistryView view,
+            string keyPathUi,
+            Func<bool, RegistryFixResult> legacyFix)
+        {
+            if (context == null || legacyFix == null)
+                return RegistryFixResult.Failed;
+
+            if (!context.AllowMutation)
+                return RegistryFixResult.Skipped;
+
+            if (context.CreateBackup)
+            {
+                var subKeyPath = ExtractSubKeyPath(hive, keyPathUi);
+                var backup = RegistryBackup.ExportKey(hive, view, subKeyPath);
+                if (!string.IsNullOrWhiteSpace(backup))
+                {
+                    context.Backups.Add(backup);
+                    context.Logs.Add("Backup: " + backup);
+                }
+                else
+                {
+                    context.Logs.Add("Backup failed: " + keyPathUi);
+                }
+            }
+
+            var result = legacyFix(false);
+            if (result == RegistryFixResult.None)
+                return RegistryFixResult.Skipped;
+
+            return result;
+        }
+
+        private static string ExtractSubKeyPath(RegistryHive hive, string keyPathUi)
+        {
+            if (string.IsNullOrWhiteSpace(keyPathUi))
+                return keyPathUi;
+
+            var prefix = HiveToUi(hive) + "\\";
+            if (keyPathUi.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return keyPathUi.Substring(prefix.Length);
+
+            return keyPathUi.TrimStart('\\');
         }
 
         private static string HiveToUi(RegistryHive hive)
@@ -195,7 +234,7 @@ namespace WashinPC.Engines.Registry
                                 if (!FileMissing(exe)) continue;
 
                                 AddIssue(
-                                    "registry.cat.app_paths",
+                                    "registry.cat.applications",
                                     RegistryHive.LocalMachine,
                                     view,
                                     $@"HKLM\{sub}\{sk}",
@@ -356,7 +395,6 @@ namespace WashinPC.Engines.Registry
 
         private void ScanUnusedFileExtensions()
         {
-            const string sub = @"";
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
                 try
@@ -458,7 +496,7 @@ namespace WashinPC.Engines.Registry
                                         {
                                             // Fix: удаляем CLSID ТОЛЬКО если ключ минимальный (только InprocServer32)
                                             AddIssue(
-                                                "registry.cat.activex",
+                                                "registry.cat.active_x",
                                                 RegistryHive.ClassesRoot,
                                                 view,
                                                 $@"HKCR\CLSID\{guid}",
@@ -811,7 +849,7 @@ namespace WashinPC.Engines.Registry
                                         if (!FileMissing(localPackage)) continue;
 
                                         AddIssue(
-                                            "registry.cat.installers",
+                                            "registry.cat.installer_refs",
                                             RegistryHive.LocalMachine,
                                             view,
                                             $@"HKLM\{ipPath}",
@@ -886,7 +924,7 @@ namespace WashinPC.Engines.Registry
 
                                     // Fix: удаляем только битые значения, не весь uninstall
                                     AddIssue(
-                                        "registry.cat.obsolete",
+                                        "registry.cat.obsolete_software",
                                         hive,
                                         view,
                                         $@"{hiveStr}\{sub}\{sk}",
@@ -1026,7 +1064,7 @@ namespace WashinPC.Engines.Registry
                         if (emptyOrders == 0) continue;
 
                         AddIssue(
-                            "registry.cat.start_menu_order",
+                            "registry.cat.start_menu",
                             RegistryHive.CurrentUser,
                             view,
                             $@"HKCU\{sub}",
@@ -1219,7 +1257,7 @@ namespace WashinPC.Engines.Registry
                                     continue;
 
                                 AddIssue(
-                                    "registry.cat.windows_services",
+                                    "registry.cat.startup",
                                     RegistryHive.LocalMachine,
                                     view,
                                     $@"HKLM\{sub}\{svc}",
@@ -1252,3 +1290,5 @@ namespace WashinPC.Engines.Registry
         }
     }
 }
+
+

@@ -14,6 +14,7 @@ namespace WashinPC
             base.OnStartup(e);
 
             AppBootstrap.Initialize();
+            Localizer.Initialize();
 
             if (!Utils.IsAdministrator())
             {
@@ -25,8 +26,6 @@ namespace WashinPC
                 Shutdown();
                 return;
             }
-
-            Localizer.Initialize();
 
             var win = new MainWindow();
             MainWindow = win;

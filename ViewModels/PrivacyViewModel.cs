@@ -35,6 +35,9 @@ namespace WashinPC.ViewModels
 
             Localizer.LanguageChanged += () =>
             {
+                foreach (var item in Items)
+                    item.RefreshLocalization();
+
                 OnPropertyChanged(nameof(SummaryText));
             };
         }
@@ -88,30 +91,13 @@ namespace WashinPC.ViewModels
                 SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                var files = Items
+                var selectedKeys = Items
                     .Where(i => i.IsChecked)
-                    .SelectMany(i =>
-                    {
-                        var key = i.Title?.Key;
-                        var rule = _engine
-                            .GetType()
-                            .GetField("_rules", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                            ?.GetValue(_engine) as System.Collections.IEnumerable;
-
-                        return Enumerable.Empty<string>();
-                    })
+                    .Select(i => i.Title?.Key)
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
                     .ToList();
 
-                // Проще и безопаснее: пересканируем и удалим всё выбранное
-                int tmpFiles;
-                long tmpBytes;
-                var groups = _engine.Scan(out tmpFiles, out tmpBytes);
-
-                foreach (var g in groups)
-                {
-                    if (Items.Any(i => i.IsChecked && i.Title.Key == g.LocalizationKey))
-                        _engine.CleanSelected(g.Files);
-                }
+                await Task.Run(() => _engine.CleanSelectedGroups(selectedKeys));
 
                 Items.Clear();
                 _totalFiles = 0;

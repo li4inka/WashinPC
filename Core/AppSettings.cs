@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Win32;
 
 namespace WashinPC.Core
@@ -5,6 +6,7 @@ namespace WashinPC.Core
     public static class AppSettings
     {
         private const string Root = @"Software\WashinPC";
+        public static event Action<string> SettingChanged;
 
         public static bool DarkMode
         {
@@ -16,6 +18,12 @@ namespace WashinPC.Core
         {
             get { return ReadString("Language", "ru"); }
             set { WriteString("Language", value); }
+        }
+
+        public static bool RegistryExpertMode
+        {
+            get { return ReadBool("RegistryExpertMode", false); }
+            set { WriteBool("RegistryExpertMode", value); }
         }
 
         private static bool ReadBool(string name, bool def)
@@ -41,6 +49,7 @@ namespace WashinPC.Core
             {
                 key = Registry.CurrentUser.CreateSubKey(Root);
                 key.SetValue(name, value ? 1 : 0, RegistryValueKind.DWord);
+                SettingChanged?.Invoke(name);
             }
             finally
             {
@@ -70,6 +79,7 @@ namespace WashinPC.Core
             {
                 key = Registry.CurrentUser.CreateSubKey(Root);
                 key.SetValue(name, value, RegistryValueKind.String);
+                SettingChanged?.Invoke(name);
             }
             finally
             {

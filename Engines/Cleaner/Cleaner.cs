@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using WashinPC.Core.Utils;
 
 namespace WashinPC.Engines.Cleaner
@@ -86,7 +87,8 @@ namespace WashinPC.Engines.Cleaner
                 foreach (var path in rule.PathsProvider())
                 {
                     var p = Utils.ExpandPath(path);
-                    if (!Directory.Exists(p)) continue;
+                    if (!Directory.Exists(p))
+                        continue;
 
                     string[] files;
                     try
@@ -98,10 +100,17 @@ namespace WashinPC.Engines.Cleaner
                         continue;
                     }
 
-                    foreach (var f in files)
+                    foreach (var file in files)
                     {
-                        gr.Files.Add(f);
-                        try { gr.TotalBytes += new FileInfo(f).Length; } catch { }
+                        gr.Files.Add(file);
+                        try
+                        {
+                            gr.TotalBytes += new FileInfo(file).Length;
+                        }
+                        catch
+                        {
+                            // Ignore file size errors.
+                        }
                     }
                 }
 
@@ -116,10 +125,48 @@ namespace WashinPC.Engines.Cleaner
             return result;
         }
 
+        public int CleanSelectedGroups(IEnumerable<string> selectedGroupKeys)
+        {
+            var keySet = new HashSet<string>(
+                selectedGroupKeys ?? Enumerable.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (keySet.Count == 0)
+                return 0;
+
+            int totalFiles;
+            long totalBytes;
+            var groups = ScanDetailed(out totalFiles, out totalBytes);
+
+            var uniqueFiles = groups
+                .Where(g => keySet.Contains(g.LocalizationKey))
+                .SelectMany(g => g.Files)
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            int deleted = 0;
+            foreach (var file in uniqueFiles)
+            {
+                try
+                {
+                    if (!File.Exists(file))
+                        continue;
+
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                    deleted++;
+                }
+                catch
+                {
+                    // Continue deleting other files.
+                }
+            }
+
+            return deleted;
+        }
+
         public void Clean(out int deleted)
         {
-            deleted = 0;
-            // твоя существующая логика очистки (не трогаем)
+            deleted = CleanSelectedGroups(_rules.Select(r => r.LocalizationKey));
         }
     }
 }

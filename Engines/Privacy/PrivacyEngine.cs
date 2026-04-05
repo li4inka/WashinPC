@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using WashinPC.Core.Utils;
 
 namespace WashinPC.Engines.Privacy
@@ -109,6 +110,43 @@ namespace WashinPC.Engines.Privacy
                     // как и в Cleaner — не падаем
                 }
             }
+        }
+
+        public int CleanSelectedGroups(IEnumerable<string> selectedGroupKeys)
+        {
+            var keySet = new HashSet<string>(
+                selectedGroupKeys ?? Enumerable.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (keySet.Count == 0)
+                return 0;
+
+            int totalFiles;
+            long totalBytes;
+            var groups = Scan(out totalFiles, out totalBytes);
+
+            int deleted = 0;
+            foreach (var file in groups
+                .Where(g => keySet.Contains(g.LocalizationKey))
+                .SelectMany(g => g.Files)
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    if (!File.Exists(file))
+                        continue;
+
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                    deleted++;
+                }
+                catch
+                {
+                    // Keep cleaning other files.
+                }
+            }
+
+            return deleted;
         }
     }
 }

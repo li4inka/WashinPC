@@ -9,6 +9,8 @@ namespace WashinPC.ViewModels
     {
         public string CategoryKey { get; }
         public RegistryRiskLevel Risk { get; }
+        private readonly bool _isAvailable;
+        private readonly string _disabledReasonKey;
 
         private bool _isChecked;
 
@@ -17,9 +19,24 @@ namespace WashinPC.ViewModels
             get { return _isChecked; }
             set
             {
+                if (!_isAvailable) return;
                 if (_isChecked == value) return;
                 _isChecked = value;
                 OnPropertyChanged();
+            }
+        }
+
+        public bool IsAvailable
+        {
+            get { return _isAvailable; }
+        }
+
+        public string DisabledReason
+        {
+            get
+            {
+                if (_isAvailable) return string.Empty;
+                return Localizer.T(_disabledReasonKey ?? "registry.safe_only.disabled");
             }
         }
 
@@ -57,11 +74,14 @@ namespace WashinPC.ViewModels
             string categoryKey,
             RegistryRiskLevel risk,
             bool enabled,
+            bool isAvailable,
             Action<string> showInfo)
         {
             CategoryKey = categoryKey;
             Risk = risk;
-            _isChecked = enabled;
+            _isAvailable = isAvailable;
+            _disabledReasonKey = "registry.safe_only.disabled";
+            _isChecked = enabled && isAvailable;
             _showInfo = showInfo;
 
             InfoCommand = new RelayCommand(ShowInfo);
@@ -79,6 +99,7 @@ namespace WashinPC.ViewModels
         {
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(RiskTitle));
+            OnPropertyChanged(nameof(DisabledReason));
         }
     }
 }

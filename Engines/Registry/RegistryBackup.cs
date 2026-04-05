@@ -34,6 +34,8 @@ namespace WashinPC.Engines.Registry
                 string hiveStr =
                     hive == RegistryHive.LocalMachine ? "HKLM" :
                     hive == RegistryHive.CurrentUser ? "HKCU" :
+                    hive == RegistryHive.ClassesRoot ? "HKCR" :
+                    hive == RegistryHive.Users ? "HKU" :
                     null;
 
                 if (hiveStr == null)

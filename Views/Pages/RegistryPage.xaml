@@ -46,7 +46,9 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" Margin="12,4">
                                 <CheckBox Content="{Binding Title}"
-                                          IsChecked="{Binding IsChecked}"/>
+                                          IsChecked="{Binding IsChecked}"
+                                          IsEnabled="{Binding IsAvailable}"
+                                          ToolTip="{Binding DisabledReason}"/>
 
                                 <!-- ? Dangerous -->
                                 <Button Content="?"

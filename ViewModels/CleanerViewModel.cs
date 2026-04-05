@@ -63,6 +63,9 @@ namespace WashinPC.ViewModels
 
             Localizer.LanguageChanged += () =>
             {
+                foreach (var item in Items)
+                    item.RefreshLocalization();
+
                 OnPropertyChanged(nameof(SummaryText));
             };
         }
@@ -123,13 +126,20 @@ namespace WashinPC.ViewModels
                 SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                int deleted;
-                await Task.Run(() => _engine.Clean(out deleted));
+                var selectedKeys = Items
+                    .Where(i => i.IsChecked)
+                    .Select(i => i.Title?.Key)
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .ToList();
+
+                int deleted = await Task.Run(() =>
+                    _engine.CleanSelectedGroups(selectedKeys));
 
                 Items.Clear();
                 _totalFiles = 0;
                 _totalBytes = 0;
                 OnPropertyChanged(nameof(SummaryText));
+                SetStatus(string.Format(Loc.CleanerDeleted.Value, deleted));
             }
             finally
             {

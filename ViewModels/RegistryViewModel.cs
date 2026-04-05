@@ -37,8 +37,7 @@ namespace WashinPC.ViewModels
 
         public string Category => Model.Category;
         public string KeyPath => Model.KeyPath;
-        public string Details =>
-                        Localizer.T(Model.Details);
+        public string Details => Model.Details;
 
 
         public void RefreshText()
@@ -114,6 +113,7 @@ namespace WashinPC.ViewModels
             FixCommand = new RelayCommand(async () => await FixAsync(), () => !IsBusy);
 
             BuildCategories();
+            AppSettings.SettingChanged += OnSettingChanged;
 
             // обновляем локализацию списка найденных проблем и заголовков групп
             Localizer.LanguageChanged += () =>
@@ -136,24 +136,25 @@ namespace WashinPC.ViewModels
         private void BuildCategories()
         {
             Categories.Clear();
+            bool expertMode = AppSettings.RegistryExpertMode;
 
             // ключи должны совпадать с тем, что кладёт RegistryScanner в issue.CategoryKey
-            Add("registry.cat.uninstall", RegistryRiskLevel.Safe, true);
-            Add("registry.cat.shared_dlls", RegistryRiskLevel.Safe, true);
-            Add("registry.cat.unused_file_ext", RegistryRiskLevel.Safe, true);
-            Add("registry.cat.help_files", RegistryRiskLevel.Safe, true);
-            Add("registry.cat.obsolete_software", RegistryRiskLevel.Safe, true);
+            Add("registry.cat.uninstall", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.shared_dlls", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.unused_file_ext", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.help_files", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.obsolete_software", RegistryRiskLevel.Safe, true, true);
 
-            Add("registry.cat.applications", RegistryRiskLevel.Advanced, false);
-            Add("registry.cat.type_libraries", RegistryRiskLevel.Advanced, false);
-            Add("registry.cat.installer_refs", RegistryRiskLevel.Advanced, false);
-            Add("registry.cat.startup", RegistryRiskLevel.Advanced, false);
+            Add("registry.cat.applications", RegistryRiskLevel.Advanced, false, expertMode);
+            Add("registry.cat.type_libraries", RegistryRiskLevel.Advanced, false, expertMode);
+            Add("registry.cat.installer_refs", RegistryRiskLevel.Advanced, false, expertMode);
+            Add("registry.cat.startup", RegistryRiskLevel.Advanced, false, expertMode);
 
-            Add("registry.cat.active_x", RegistryRiskLevel.Dangerous, false);
-            Add("registry.cat.fonts", RegistryRiskLevel.Dangerous, false);
-            Add("registry.cat.mui_cache", RegistryRiskLevel.Dangerous, false);
-            Add("registry.cat.start_menu", RegistryRiskLevel.Dangerous, false);
-            Add("registry.cat.sound_events", RegistryRiskLevel.Dangerous, false);
+            Add("registry.cat.active_x", RegistryRiskLevel.Dangerous, false, expertMode);
+            Add("registry.cat.fonts", RegistryRiskLevel.Dangerous, false, expertMode);
+            Add("registry.cat.mui_cache", RegistryRiskLevel.Dangerous, false, expertMode);
+            Add("registry.cat.start_menu", RegistryRiskLevel.Dangerous, false, expertMode);
+            Add("registry.cat.sound_events", RegistryRiskLevel.Dangerous, false, expertMode);
 
             // если у тебя есть ещё категории как в CCleaner — добавляй сюда по этому же принципу.
         }
@@ -165,12 +166,13 @@ namespace WashinPC.ViewModels
             );
         }
 
-        private void Add(string key, RegistryRiskLevel risk, bool enabled)
+        private void Add(string key, RegistryRiskLevel risk, bool enabled, bool isAvailable)
         {
             Categories.Add(new RegistryCategoryView(
                 key,
                 risk,
                 enabled,
+                isAvailable,
                 ShowCategoryInfo
             ));
         }
@@ -189,7 +191,9 @@ namespace WashinPC.ViewModels
 
                 // 2) фильтруем по выбранным категориям (чтобы выбор реально влиял на результат)
                 var enabledKeys = new HashSet<string>(
-                    Categories.Where(c => c.IsChecked).Select(c => c.CategoryKey)
+                    Categories
+                        .Where(c => c.IsAvailable && c.IsChecked)
+                        .Select(c => c.CategoryKey)
                 );
 
                 var filtered = all.Where(i => enabledKeys.Contains(i.CategoryKey)).ToList();
@@ -219,35 +223,76 @@ namespace WashinPC.ViewModels
                 var selected = Items.Where(i => i.IsSelected).ToList();
                 if (selected.Count == 0)
                 {
-                    // без новых ключей Loc.* — используем существующий подход через Localizer.T
                     SetStatus(Localizer.T("registry.nothing_selected"));
                     return;
                 }
 
                 SetStatus(Localizer.T("registry.fixing"));
 
+                string restoreError = string.Empty;
+                bool hasRestorePoint = await Task.Run(() =>
+                {
+                    string err;
+                    var ok = SystemRestorePoint.TryCreate(
+                        "WashinPC Registry Cleanup",
+                        out err);
+                    restoreError = err;
+                    return ok;
+                });
+
+                if (!hasRestorePoint)
+                {
+                    var confirm = DialogService.ShowConfirm(
+                        Localizer.T("registry.restorepoint.failed.confirm", restoreError),
+                        Localizer.T("registry.info.title"));
+
+                    if (confirm != DialogResult.Yes)
+                    {
+                        SetStatus(Localizer.T("registry.restorepoint.cancelled"));
+                        return;
+                    }
+                }
+
+                var context = new RegistryFixContext
+                {
+                    AllowMutation = true,
+                    CreateBackup = CreateBackup,
+                    HasRestorePoint = hasRestorePoint
+                };
+
+                var session = new RegistryFixSessionResult();
+
                 await Task.Run(() =>
                 {
-                    // ВАЖНО:
-                    // Реальная логика бэкапа/фиксинга должна быть в RegistryScanner/Engine.
-                    // Здесь мы просто вызываем Fix для выбранных.
                     foreach (var item in selected)
                     {
                         try
                         {
-                            item.Model.Fix?.Invoke(CreateBackup);
+                            var res = item.Model.Fix?.Invoke(context) ?? RegistryFixResult.Failed;
+                            if (res == RegistryFixResult.Fixed) session.FixedCount++;
+                            else if (res == RegistryFixResult.Skipped || res == RegistryFixResult.None) session.SkippedCount++;
+                            else session.FailedCount++;
                         }
                         catch
                         {
-                            // не роняем процесс исправления
+                            session.FailedCount++;
                         }
                     }
                 });
 
-                SetStatus(Localizer.T("registry.fixed", selected.Count));
+                session.BackupCount = context.Backups.Count;
+
+                var statusText = Localizer.T(
+                    "registry.fixed.summary",
+                    session.FixedCount,
+                    session.SkippedCount,
+                    session.FailedCount);
+
+                SetStatus(statusText);
 
                 // после фикса перезапускаем скан (чтобы обновить список)
                 await ScanAsync();
+                SetStatus(statusText);
             }
             finally
             {
@@ -279,6 +324,17 @@ namespace WashinPC.ViewModels
         private void UpdateSummary()
         {
             SummaryText = Localizer.T("summary.registry", Items.Count);
+        }
+
+        private void OnSettingChanged(string settingName)
+        {
+            if (!string.Equals(settingName, "RegistryExpertMode", StringComparison.Ordinal))
+                return;
+
+            BuildCategories();
+            Items.Clear();
+            UpdateAllSelectedState();
+            UpdateSummary();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using WashinPC.Core.Mvvm;
+using WashinPC.Core.Mvvm;
 using WashinPC.Localization;
 
 namespace WashinPC.ViewModels.Common
@@ -38,19 +38,12 @@ namespace WashinPC.ViewModels.Common
             }
         }
 
-        public SizeItemViewModel()
+        public void RefreshLocalization()
         {
-            // ПРАВИЛЬНО: подписываемся один раз
-            Localizer.LanguageChanged += OnLanguageChanged;
-        }
+            if (Title != null)
+                Title.Refresh();
 
-        private void OnLanguageChanged()
-        {
-            // Сообщаем UI, что Name изменился
             OnPropertyChanged(nameof(Name));
         }
-
-        // ❌ НИКАКОГО финализатора
-        // ❌ НИКАКОЙ отписки здесь быть не должно
     }
 }
