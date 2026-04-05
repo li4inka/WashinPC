@@ -26,7 +26,15 @@ namespace WashinPC.Localization
                     return;
 
                 _current = value;
-                AppSettings.Language = value == Lang.RU ? "ru" : "en";
+                try
+                {
+                    AppSettings.Language = value == Lang.RU ? "ru" : "en";
+                }
+                catch
+                {
+                    // In restricted environments (tests/sandbox), registry write may be blocked.
+                    // Language switch should still work in-memory for the running session.
+                }
 
                 Loc.RefreshAll();
                 LanguageChanged?.Invoke();

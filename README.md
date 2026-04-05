@@ -14,11 +14,14 @@ WashinPC is a Windows utility focused on safe cleanup and predictable maintenanc
 ## Build And Test
 
 ```powershell
-dotnet build WashinPC.sln
+dotnet restore .\washinpc.csproj --configfile .\NuGet.config
+dotnet restore .\tests\WashinPC.Tests\WashinPC.Tests.csproj --configfile .\NuGet.config
+dotnet build .\washinpc.csproj --no-restore
+dotnet build .\tests\WashinPC.Tests\WashinPC.Tests.csproj --no-restore /p:BuildProjectReferences=false
 ```
 
 ```powershell
-dotnet test WashinPC.sln
+dotnet test .\tests\WashinPC.Tests\WashinPC.Tests.csproj --no-build
 ```
 
 Smoke script:
@@ -26,6 +29,12 @@ Smoke script:
 ```powershell
 .\scripts\smoke.ps1 -Configuration Release
 ```
+
+## Offline NuGet Mode
+
+- Repository includes local package source: `.nuget/offline-feed`.
+- `NuGet.config` is pinned to this local source only.
+- No internet access is required for restore/build/test after clone.
 
 ## Documentation
 
