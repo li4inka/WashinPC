@@ -1,10 +1,12 @@
-﻿using WashinPC.Localization;
+using WashinPC.Core;
+using WashinPC.Localization;
 
 namespace WashinPC.ViewModels
 {
     public class SettingsViewModel : BaseViewModel
     {
         private int _languageIndex;
+        private bool _registryExpertMode;
 
         public int LanguageIndex
         {
@@ -16,8 +18,18 @@ namespace WashinPC.ViewModels
 
                 Localizer.Current = value == 0 ? Lang.RU : Lang.EN;
                 Loc.RefreshAll();
+                OnPropertyChanged();
+            }
+        }
 
-
+        public bool RegistryExpertMode
+        {
+            get => _registryExpertMode;
+            set
+            {
+                if (_registryExpertMode == value) return;
+                _registryExpertMode = value;
+                AppSettings.RegistryExpertMode = value;
                 OnPropertyChanged();
             }
         }
@@ -25,6 +37,7 @@ namespace WashinPC.ViewModels
         public SettingsViewModel()
         {
             LanguageIndex = Localizer.Current == Lang.RU ? 0 : 1;
+            RegistryExpertMode = AppSettings.RegistryExpertMode;
         }
     }
 }

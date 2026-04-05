@@ -14,12 +14,24 @@
         <ComboBox
             SelectedIndex="{Binding LanguageIndex}"
             Margin="0,0,0,16">
-            <ComboBoxItem Content="Русский"/>
-            <ComboBoxItem Content="English"/>
+            <ComboBoxItem Content="{Binding Source={x:Static loc:Loc.SettingsLangRussian}, Path=Value}"/>
+            <ComboBoxItem Content="{Binding Source={x:Static loc:Loc.SettingsLangEnglish}, Path=Value}"/>
         </ComboBox>
 
         <TextBlock
             Text="{Binding Source={x:Static loc:Loc.SettingsInstantApply}, Path=Value}"
             Foreground="Gray"/>
+
+        <Border Height="1" Background="#E4E6EA" Margin="0,16,0,12"/>
+
+        <CheckBox
+            Content="{Binding Source={x:Static loc:Loc.SettingsRegistryExpertMode}, Path=Value}"
+            IsChecked="{Binding RegistryExpertMode, Mode=TwoWay}"
+            Margin="0,0,0,6"/>
+
+        <TextBlock
+            Text="{Binding Source={x:Static loc:Loc.SettingsRegistryExpertHint}, Path=Value}"
+            Foreground="Gray"
+            TextWrapping="Wrap"/>
     </StackPanel>
 </UserControl>

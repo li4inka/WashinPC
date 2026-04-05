@@ -271,6 +271,72 @@ namespace WashinPC.Localization
 
         );
 
+        static Localizer()
+        {
+            EnsureCriticalKeys();
+        }
+
+        private static void AddIfMissing(Dictionary<string, string> dict, string key, string value)
+        {
+            if (!dict.ContainsKey(key))
+                dict[key] = value;
+        }
+
+        private static void AddPair(string key, string ru, string en)
+        {
+            AddIfMissing(RU, key, ru);
+            AddIfMissing(EN, key, en);
+        }
+
+        private static void EnsureCriticalKeys()
+        {
+            AddPair("admin.required", "Для запуска приложения требуются права администратора.", "Administrator privileges are required to run this app.");
+
+            AddPair("version.label", "Версия", "Version");
+            AddPair("build.label", "Сборка", "Build");
+            AddPair("copyright.label", "© Kulich Software", "© Kulich Software");
+
+            AddPair("cleaner.confirm.clean", "Удалить выбранные файлы?", "Delete selected files?");
+            AddPair("cleaner.recycle.empty", "Корзина уже пуста.", "Recycle Bin is already empty.");
+            AddPair("cleaner.recycle.confirm", "Очистить корзину без возможности восстановления?", "Empty Recycle Bin permanently?");
+            AddPair("cleaner.recycle.scanning", "Проверка корзины...", "Checking Recycle Bin...");
+            AddPair("cleaner.recycle.cleaning", "Очистка корзины...", "Cleaning Recycle Bin...");
+            AddPair("cleaner.recycle.failed", "Не удалось очистить корзину.", "Failed to clean Recycle Bin.");
+            AddPair("cleaner.recycle.done", "Корзина очищена.", "Recycle Bin has been cleaned.");
+
+            AddPair("registry.nothing_selected", "Не выбрано ни одной записи для исправления.", "No registry entries selected.");
+            AddPair("registry.fixing", "Исправление реестра...", "Fixing registry...");
+            AddPair("registry.fixed.summary", "Исправлено: {0}, пропущено: {1}, ошибок: {2}", "Fixed: {0}, skipped: {1}, errors: {2}");
+            AddPair("registry.fixed.with.backup", "Исправление завершено с резервными копиями.", "Fix completed with backups.");
+            AddPair("registry.restorepoint.failed.confirm", "Не удалось создать точку восстановления.\nПродолжить без неё?\n{0}", "System restore point was not created.\nContinue without it?\n{0}");
+            AddPair("registry.restorepoint.cancelled", "Исправление отменено пользователем.", "Fix cancelled by user.");
+            AddPair("registry.safe_only.disabled", "Недоступно в режиме Safe-only.", "Unavailable in Safe-only mode.");
+            AddPair("registry.risk.safe", "Безопасно", "Safe");
+            AddPair("registry.risk.advanced", "Продвинутый", "Advanced");
+            AddPair("registry.risk.dangerous", "Рискованный", "Dangerous");
+
+            AddPair("contextmenu.toggle.unsupported", "Безопасное переключение для этого типа пункта не поддерживается.", "Safe toggle is not supported for this menu item type.");
+            AddPair("contextmenu.delete.unsupported", "Удаление для этой записи не поддерживается.", "Delete is not supported for this menu entry.");
+            AddPair("contextmenu.col.delete", "Удал.", "Del");
+            AddPair("contextmenu.btn.refresh", "Обновить", "Refresh");
+            AddPair("contextmenu.confirm.delete", "Удалить выбранные пункты контекстного меню ({0})?", "Delete selected context menu entries ({0})?");
+            AddPair("contextmenu.delete.cancelled", "Удаление отменено.", "Delete cancelled.");
+            AddPair("contextmenu.target.any_file", "Файл", "File");
+            AddPair("contextmenu.target.shortcut", "Ярлык", "Shortcut");
+            AddPair("contextmenu.target.folder", "Папка", "Folder");
+            AddPair("contextmenu.target.folder_background", "Фон папки", "Folder Background");
+            AddPair("contextmenu.target.desktop", "Рабочий стол", "Desktop");
+            AddPair("contextmenu.target.drive", "Диск", "Drive");
+            AddPair("contextmenu.kind.shellex", "ShellEx обработчик", "ShellEx Handler");
+            AddPair("contextmenu.kind.shellverb", "Shell команда", "Shell Verb");
+            AddPair("contextmenu.scope.hkcu", "Текущий пользователь", "Current User");
+            AddPair("contextmenu.scope.hklm", "Вся система", "All Users (Machine)");
+
+            AddPair("settings.registry_expert_mode", "Экспертный режим реестра", "Registry expert mode");
+            AddPair("settings.registry_expert_hint", "Разблокирует категории «Продвинутый» и «Рискованный» в разделе реестра. Используйте только при полном понимании рисков.", "Unlocks Advanced and Dangerous categories in the registry section. Use only if you understand the risks.");
+            AddPair("settings.lang.russian", "Русский", "Russian");
+            AddPair("settings.lang.english", "Английский", "English");
+        }
         // ===================== API =====================
 
         public static void Initialize()
@@ -324,6 +390,10 @@ public static class Loc
 
         public static readonly LocalizedString SettingsLanguage = new LocalizedString("settings.language");
         public static readonly LocalizedString SettingsInstantApply = new LocalizedString("settings.instant.apply");
+        public static readonly LocalizedString SettingsRegistryExpertMode = new LocalizedString("settings.registry_expert_mode");
+        public static readonly LocalizedString SettingsRegistryExpertHint = new LocalizedString("settings.registry_expert_hint");
+        public static readonly LocalizedString SettingsLangRussian = new LocalizedString("settings.lang.russian");
+        public static readonly LocalizedString SettingsLangEnglish = new LocalizedString("settings.lang.english");
 
         public static readonly LocalizedString ColSource = new LocalizedString("col.source");
         public static readonly LocalizedString ColSize = new LocalizedString("col.size");
@@ -378,6 +448,7 @@ public static class Loc
         public static readonly LocalizedString TabContextMenu = new LocalizedString("tab.contextmenu");
 
         public static readonly LocalizedString ContextMenuColDisable = new LocalizedString("contextmenu.col.disable");
+        public static readonly LocalizedString ContextMenuColDelete = new LocalizedString("contextmenu.col.delete");
         public static readonly LocalizedString ContextMenuColName = new LocalizedString("contextmenu.col.name");
         public static readonly LocalizedString ContextMenuColTarget = new LocalizedString("contextmenu.col.target");
         public static readonly LocalizedString ContextMenuColKind = new LocalizedString("contextmenu.col.kind");
@@ -386,6 +457,7 @@ public static class Loc
         public static readonly LocalizedString ContextMenuColRegistry = new LocalizedString("contextmenu.col.registry");
 
         public static readonly LocalizedString ContextMenuBtnApply = new LocalizedString("contextmenu.btn.apply");
+        public static readonly LocalizedString ContextMenuBtnRefresh = new LocalizedString("contextmenu.btn.refresh");
         public static readonly LocalizedString BtnDisable = new LocalizedString("btn.disable");
         public static readonly LocalizedString BtnEnable = new LocalizedString("btn.enable");
 
@@ -411,6 +483,10 @@ public static class Loc
 
             SettingsLanguage.Refresh();
             SettingsInstantApply.Refresh();
+            SettingsRegistryExpertMode.Refresh();
+            SettingsRegistryExpertHint.Refresh();
+            SettingsLangRussian.Refresh();
+            SettingsLangEnglish.Refresh();
 
             ColSource.Refresh();
             ColSize.Refresh();
@@ -455,6 +531,7 @@ public static class Loc
             TabContextMenu.Refresh();
 
             ContextMenuColDisable.Refresh();
+            ContextMenuColDelete.Refresh();
             ContextMenuColName.Refresh();
             ContextMenuColTarget.Refresh();
             ContextMenuColKind.Refresh();
@@ -463,6 +540,7 @@ public static class Loc
             ContextMenuColRegistry.Refresh();
 
             ContextMenuBtnApply.Refresh();
+            ContextMenuBtnRefresh.Refresh();
             BtnDisable.Refresh();
             BtnEnable.Refresh();
 
@@ -470,3 +548,4 @@ public static class Loc
         }
     }
 }
+
