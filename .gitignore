@@ -51,9 +51,17 @@ publish/
 # NuGet packages (if using packages.config)
 packages/
 
-# NuGet v3 cache (global)
-.nuget/
+# Local NuGet repo layout:
+# keep offline feed in git, ignore everything else under .nuget
+/.nuget/*
+/.nuget/packages/
+!/.nuget/offline-feed/
+!/.nuget/offline-feed/**
+
+# .NET SDK/cache
 .dotnet/
+/.dotnet/
+/.dotnet-home/
 
 ############################################
 # OS / IDE noise
@@ -73,6 +81,11 @@ Desktop.ini
 
 *.log
 *.dmp
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
 
 ############################################
 # Temporary files
@@ -99,6 +112,7 @@ _ReSharper*/
 # Installer outputs
 Setup/
 Installer/
+artifacts/
 
 # Crash dumps
 crashlogs/
