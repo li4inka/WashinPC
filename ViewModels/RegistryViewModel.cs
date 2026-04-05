@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WashinPC.Core;
+using WashinPC.Core.Logging;
 using WashinPC.Core.Mvvm;
 using WashinPC.Engines.Registry;
 using WashinPC.Localization;
@@ -179,6 +180,9 @@ namespace WashinPC.ViewModels
 
         private async Task ScanAsync()
         {
+            var operationId = "registry-scan-" + Guid.NewGuid().ToString("N");
+            AppLogger.Info("registry", "scan.start", "Starting registry scan.", operationId);
+
             try
             {
                 IsBusy = true;
@@ -206,6 +210,7 @@ namespace WashinPC.ViewModels
 
                 UpdateAllSelectedState();
                 UpdateSummary();
+                AppLogger.Info("registry", "scan.done", "Registry scan completed. Found: " + filtered.Count, operationId);
             }
             finally
             {
@@ -216,6 +221,9 @@ namespace WashinPC.ViewModels
 
         private async Task FixAsync()
         {
+            var operationId = "registry-fix-" + Guid.NewGuid().ToString("N");
+            AppLogger.Info("registry", "fix.start", "Starting registry fix.", operationId);
+
             try
             {
                 IsBusy = true;
@@ -239,9 +247,13 @@ namespace WashinPC.ViewModels
                     restoreError = err;
                     return ok;
                 });
+                if (hasRestorePoint)
+                    AppLogger.Info("registry", "restorepoint.created", "System restore point created.", operationId);
 
                 if (!hasRestorePoint)
                 {
+                    AppLogger.Warn("registry", "restorepoint.fail", "System restore point creation failed: " + restoreError, operationId);
+
                     var confirm = DialogService.ShowConfirm(
                         Localizer.T("registry.restorepoint.failed.confirm", restoreError),
                         Localizer.T("registry.info.title"));
@@ -249,6 +261,7 @@ namespace WashinPC.ViewModels
                     if (confirm != DialogResult.Yes)
                     {
                         SetStatus(Localizer.T("registry.restorepoint.cancelled"));
+                        AppLogger.Warn("registry", "fix.cancelled", "Registry fix cancelled by user after restore point failure.", operationId);
                         return;
                     }
                 }
@@ -282,6 +295,14 @@ namespace WashinPC.ViewModels
 
                 session.BackupCount = context.Backups.Count;
 
+                foreach (var logEntry in context.Logs)
+                {
+                    if (logEntry.StartsWith("Backup failed", StringComparison.OrdinalIgnoreCase))
+                        AppLogger.Warn("registry", "backup.fail", logEntry, operationId);
+                    else
+                        AppLogger.Info("registry", "backup.ok", logEntry, operationId);
+                }
+
                 var statusText = Localizer.T(
                     "registry.fixed.summary",
                     session.FixedCount,
@@ -293,6 +314,7 @@ namespace WashinPC.ViewModels
                 // после фикса перезапускаем скан (чтобы обновить список)
                 await ScanAsync();
                 SetStatus(statusText);
+                AppLogger.Info("registry", "fix.done", "Registry fix completed. Fixed: " + session.FixedCount + ", Skipped: " + session.SkippedCount + ", Failed: " + session.FailedCount + ", Backups: " + session.BackupCount, operationId);
             }
             finally
             {
@@ -338,3 +360,5 @@ namespace WashinPC.ViewModels
         }
     }
 }
+
+

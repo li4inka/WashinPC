@@ -26,6 +26,12 @@ namespace WashinPC.Core
             set { WriteBool("RegistryExpertMode", value); }
         }
 
+        public static bool VerboseDiagnostics
+        {
+            get { return ReadBool("VerboseDiagnostics", false); }
+            set { WriteBool("VerboseDiagnostics", value); }
+        }
+
         private static bool ReadBool(string name, bool def)
         {
             RegistryKey key = null;

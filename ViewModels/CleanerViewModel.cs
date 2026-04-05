@@ -1,7 +1,8 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using WashinPC.Core;
+using WashinPC.Core.Logging;
 using WashinPC.Core.Mvvm;
 using WashinPC.Core.Utils;
 using WashinPC.Engines.Cleaner;
@@ -27,8 +28,6 @@ namespace WashinPC.ViewModels
                 _totalFiles,
                 FileSizeFormatter.Format(_totalBytes));
 
-        // ===== OPTIONS =====
-
         public bool IsAggressive
         {
             get => _engine.AggressiveMode;
@@ -40,8 +39,6 @@ namespace WashinPC.ViewModels
                 OnPropertyChanged();
             }
         }
-
-        // ===== COMMANDS =====
 
         public RelayCommand ScanCommand { get; }
         public RelayCommand CleanCommand { get; }
@@ -77,10 +74,11 @@ namespace WashinPC.ViewModels
             RecycleCommand.RaiseCanExecuteChanged();
         }
 
-        // ===== LOGIC =====
-
         private async Task ScanAsync()
         {
+            var operationId = "cleaner-scan-" + System.Guid.NewGuid().ToString("N");
+            AppLogger.Info("cleaner", "scan.start", "Starting cleaner scan.", operationId);
+
             try
             {
                 SetBusyText(Loc.CleanerScanning.Value);
@@ -107,6 +105,7 @@ namespace WashinPC.ViewModels
                 _totalFiles = files;
                 _totalBytes = bytes;
                 OnPropertyChanged(nameof(SummaryText));
+                AppLogger.Info("cleaner", "scan.done", "Cleaner scan completed. Files: " + files + ", Bytes: " + bytes, operationId);
             }
             finally
             {
@@ -119,6 +118,9 @@ namespace WashinPC.ViewModels
             if (DialogService.ShowConfirm(Loc.CleanerConfirmClean.Value)
                 != DialogResult.Yes)
                 return;
+
+            var operationId = "cleaner-clean-" + System.Guid.NewGuid().ToString("N");
+            AppLogger.Info("cleaner", "clean.start", "Starting cleaner cleanup.", operationId);
 
             try
             {
@@ -140,6 +142,7 @@ namespace WashinPC.ViewModels
                 _totalBytes = 0;
                 OnPropertyChanged(nameof(SummaryText));
                 SetStatus(string.Format(Loc.CleanerDeleted.Value, deleted));
+                AppLogger.Info("cleaner", "clean.done", "Cleaner cleanup finished. Deleted: " + deleted, operationId);
             }
             finally
             {
@@ -168,10 +171,12 @@ namespace WashinPC.ViewModels
                 if (!Native.EmptyRecycleBinQuiet())
                 {
                     DialogService.ShowWarning(Loc.CleanerRecycleFailed.Value);
+                    AppLogger.Warn("cleaner", "recycle.fail", "Recycle bin cleanup failed.");
                     return;
                 }
 
                 SetStatus(Loc.CleanerRecycleDone.Value);
+                AppLogger.Info("cleaner", "recycle.done", "Recycle bin cleaned.");
             }
             finally
             {

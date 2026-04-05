@@ -139,58 +139,11 @@ namespace WashinPC.Engines.Registry
                 View = view,
                 KeyPath = keyPathUi,
                 ValueName = valueName,
-                Fix = ctx => ExecuteLegacyFix(ctx, hive, view, keyPathUi, legacyFix)
+                Fix = ctx => RegistryFixExecutor.ExecuteLegacyFix(ctx, hive, view, keyPathUi, legacyFix)
             };
 
             issue.RefreshText();
             _issues.Add(issue);
-        }
-
-        private static RegistryFixResult ExecuteLegacyFix(
-            RegistryFixContext context,
-            RegistryHive hive,
-            RegistryView view,
-            string keyPathUi,
-            Func<bool, RegistryFixResult> legacyFix)
-        {
-            if (context == null || legacyFix == null)
-                return RegistryFixResult.Failed;
-
-            if (!context.AllowMutation)
-                return RegistryFixResult.Skipped;
-
-            if (context.CreateBackup)
-            {
-                var subKeyPath = ExtractSubKeyPath(hive, keyPathUi);
-                var backup = RegistryBackup.ExportKey(hive, view, subKeyPath);
-                if (!string.IsNullOrWhiteSpace(backup))
-                {
-                    context.Backups.Add(backup);
-                    context.Logs.Add("Backup: " + backup);
-                }
-                else
-                {
-                    context.Logs.Add("Backup failed: " + keyPathUi);
-                }
-            }
-
-            var result = legacyFix(false);
-            if (result == RegistryFixResult.None)
-                return RegistryFixResult.Skipped;
-
-            return result;
-        }
-
-        private static string ExtractSubKeyPath(RegistryHive hive, string keyPathUi)
-        {
-            if (string.IsNullOrWhiteSpace(keyPathUi))
-                return keyPathUi;
-
-            var prefix = HiveToUi(hive) + "\\";
-            if (keyPathUi.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                return keyPathUi.Substring(prefix.Length);
-
-            return keyPathUi.TrimStart('\\');
         }
 
         private static string HiveToUi(RegistryHive hive)

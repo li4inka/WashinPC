@@ -1,6 +1,7 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using WashinPC.Core.Logging;
 using WashinPC.Core.Mvvm;
 using WashinPC.Core.Utils;
 using WashinPC.Engines.Privacy;
@@ -50,6 +51,9 @@ namespace WashinPC.ViewModels
 
         private async Task ScanAsync()
         {
+            var operationId = "privacy-scan-" + System.Guid.NewGuid().ToString("N");
+            AppLogger.Info("privacy", "scan.start", "Starting privacy scan.", operationId);
+
             try
             {
                 SetBusyText(Loc.PrivacyScanning.Value);
@@ -76,6 +80,7 @@ namespace WashinPC.ViewModels
                 _totalFiles = files;
                 _totalBytes = bytes;
                 OnPropertyChanged(nameof(SummaryText));
+                AppLogger.Info("privacy", "scan.done", "Privacy scan completed. Files: " + files + ", Bytes: " + bytes, operationId);
             }
             finally
             {
@@ -85,6 +90,9 @@ namespace WashinPC.ViewModels
 
         private async Task CleanAsync()
         {
+            var operationId = "privacy-clean-" + System.Guid.NewGuid().ToString("N");
+            AppLogger.Info("privacy", "clean.start", "Starting privacy cleanup.", operationId);
+
             try
             {
                 SetBusyText(Loc.StatusCleaning.Value);
@@ -97,12 +105,13 @@ namespace WashinPC.ViewModels
                     .Where(k => !string.IsNullOrWhiteSpace(k))
                     .ToList();
 
-                await Task.Run(() => _engine.CleanSelectedGroups(selectedKeys));
+                var deleted = await Task.Run(() => _engine.CleanSelectedGroups(selectedKeys));
 
                 Items.Clear();
                 _totalFiles = 0;
                 _totalBytes = 0;
                 OnPropertyChanged(nameof(SummaryText));
+                AppLogger.Info("privacy", "clean.done", "Privacy cleanup finished. Deleted: " + deleted, operationId);
             }
             finally
             {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Security.Principal;
 using Microsoft.Win32;
 using WashinPC.Core;
+using WashinPC.Core.Logging;
 
 
 namespace WashinPC.Core.Utils
@@ -30,14 +31,7 @@ namespace WashinPC.Core.Utils
 
         public static void Log(string message)
         {
-            try
-            {
-                File.AppendAllText(
-                    AppBootstrap.LogFile,
-                    $"{DateTime.Now:u} {message}\r\n"
-                );
-            }
-            catch { }
+            AppLogger.Info("utils", "utils.log", message);
         }
 
         // ───────────── PATH HELPERS ─────────────

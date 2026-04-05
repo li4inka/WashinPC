@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Input;
+using WashinPC.Core.Logging;
 using WashinPC.Engines.ContextMenu;
 using WashinPC.Localization;
 using WashinPC.Services;
@@ -195,6 +196,9 @@ namespace WashinPC.ViewModels
 
         private void Scan()
         {
+            var operationId = "ctx-scan-" + Guid.NewGuid().ToString("N");
+            AppLogger.Info("contextmenu", "scan.start", "Starting context menu scan.", operationId);
+
             try
             {
                 IsBusy = true;
@@ -207,6 +211,7 @@ namespace WashinPC.ViewModels
                     Items.Add(new ContextMenuItemViewModel(entries[i]));
 
                 UpdateSummary();
+                AppLogger.Info("contextmenu", "scan.done", "Context menu scan completed. Items: " + Items.Count, operationId);
                 SetStatus("");
             }
             finally
@@ -218,6 +223,9 @@ namespace WashinPC.ViewModels
 
         private void Apply()
         {
+            var operationId = "ctx-apply-" + Guid.NewGuid().ToString("N");
+            AppLogger.Info("contextmenu", "apply.start", "Starting context menu apply.", operationId);
+
             try
             {
                 IsBusy = true;
@@ -236,6 +244,7 @@ namespace WashinPC.ViewModels
                     if (confirm != DialogResult.Yes)
                     {
                         SetStatus(Localizer.T("contextmenu.delete.cancelled"));
+                        AppLogger.Warn("contextmenu", "delete.cancelled", "Context menu delete cancelled by user.", operationId);
                         return;
                     }
                 }
@@ -262,6 +271,7 @@ namespace WashinPC.ViewModels
 
                 UpdateSummary();
                 SetStatus(Localizer.T("contextmenu.applied", changed.ToString()));
+                AppLogger.Info("contextmenu", "apply.done", "Context menu apply completed. Changed: " + changed + ", Deleted: " + toDelete.Count, operationId);
                 SetStatus("");
             }
             finally
