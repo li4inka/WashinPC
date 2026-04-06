@@ -9,6 +9,46 @@
         AllowsTransparency="True"
         Background="Transparent">
 
+    <Window.Resources>
+        <Style x:Key="ConfirmYesButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#FFD9DEE7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.PrimaryHover}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.PrimaryHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.PrimaryPressed}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.PrimaryPressed}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <!-- OUTER CARD -->
     <Border
         Width="420"
@@ -69,8 +109,7 @@
                                 Command="{Binding NoCommand}"/>
 
                         <Button Width="90"
-                                Style="{StaticResource PrimaryButton}"
-                                Background="{Binding AccentBrush}"
+                                Style="{StaticResource ConfirmYesButton}"
                                 Content="{Binding Source={x:Static loc:Loc.BtnYes}, Path=Value}"
                                 Command="{Binding YesCommand}"/>
                     </StackPanel>
