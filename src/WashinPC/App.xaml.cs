@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Threading;
 using WashinPC.Core;
 using WashinPC.Core.Logging;
 using WashinPC.Core.Utils;
 using WashinPC.Localization;
+using WashinPC.Services;
 
 namespace WashinPC
 {
@@ -16,6 +17,7 @@ namespace WashinPC
 
             AppBootstrap.Initialize();
             Localizer.Initialize();
+            ThemeService.ApplyFromSettings();
             RegisterGlobalExceptionLogging();
             AppLogger.Info("app", "startup", "Application startup sequence initialized.");
 

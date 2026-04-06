@@ -78,19 +78,23 @@ namespace WashinPC.Services
         {
             get
             {
+                var primary = Application.Current?.TryFindResource("Brush.Primary") as Brush;
+                var warning = Application.Current?.TryFindResource("Brush.Warning") as Brush;
+                var danger = Application.Current?.TryFindResource("Brush.Destructive") as Brush;
+
                 switch (Type)
                 {
                     case DialogType.Info:
-                        return new SolidColorBrush(Color.FromRgb(58, 122, 254));
+                        return primary ?? new SolidColorBrush(Color.FromRgb(0, 123, 255));
 
                     case DialogType.Confirm:
-                        return new SolidColorBrush(Color.FromRgb(10, 91, 211));
+                        return primary ?? new SolidColorBrush(Color.FromRgb(0, 123, 255));
 
                     case DialogType.Warning:
-                        return new SolidColorBrush(Color.FromRgb(230, 167, 0));
+                        return warning ?? new SolidColorBrush(Color.FromRgb(245, 176, 51));
 
                     case DialogType.Error:
-                        return new SolidColorBrush(Color.FromRgb(209, 52, 56));
+                        return danger ?? new SolidColorBrush(Color.FromRgb(227, 90, 90));
 
                     default:
                         return Brushes.Transparent;

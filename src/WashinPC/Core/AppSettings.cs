@@ -14,6 +14,12 @@ namespace WashinPC.Core
             set { WriteBool("DarkMode", value); }
         }
 
+        public static string ThemeMode
+        {
+            get { return ReadString("ThemeMode", "auto"); }
+            set { WriteString("ThemeMode", value); }
+        }
+
         public static string Language
         {
             get { return ReadString("Language", "ru"); }

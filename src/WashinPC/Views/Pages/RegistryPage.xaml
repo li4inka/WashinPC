@@ -1,192 +1,265 @@
-<UserControl x:Class="WashinPC.Views.Pages.RegistryPage"
+﻿<UserControl x:Class="WashinPC.Views.Pages.RegistryPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:WashinPC.Localization">
 
     <UserControl.Resources>
-        <CollectionViewSource x:Key="CategoriesView"
-                              Source="{Binding Categories}">
+        <CollectionViewSource x:Key="CategoriesView" Source="{Binding Categories}">
             <CollectionViewSource.GroupDescriptions>
-                <!-- ?? group by loc -->
                 <PropertyGroupDescription PropertyName="RiskTitle"/>
             </CollectionViewSource.GroupDescriptions>
         </CollectionViewSource>
     </UserControl.Resources>
 
-    <Grid Margin="14">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
-            <ColumnDefinition Width="12"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <!-- LEFT -->
-        <Border Grid.Column="0" Style="{StaticResource ContentCard}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <ScrollViewer.Resources>
-                    <Style TargetType="ScrollBar"
-                           BasedOn="{StaticResource FlatScrollBar}"/>
-                </ScrollViewer.Resources>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <ItemsControl ItemsSource="{Binding Source={StaticResource CategoriesView}}">
-                    <ItemsControl.GroupStyle>
-                        <GroupStyle>
-                            <GroupStyle.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Margin="12,12,12,6"
-                                               FontWeight="SemiBold"
-                                               Foreground="#666"
-                                               Text="{Binding Name}"/>
-                                </DataTemplate>
-                            </GroupStyle.HeaderTemplate>
-                        </GroupStyle>
-                    </ItemsControl.GroupStyle>
+            <Border Grid.Column="0" Style="{StaticResource ContentCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="12,4">
-                                <CheckBox Content="{Binding Title}"
-                                          IsChecked="{Binding IsChecked}"
-                                          IsEnabled="{Binding IsAvailable}"
-                                          ToolTip="{Binding DisabledReason}"/>
-
-                                <!-- ? Dangerous -->
-                                <Button Content="?"
-        Command="{Binding InfoCommand}">
-                                    <Button.Style>
-                                        <Style TargetType="Button"
-               BasedOn="{StaticResource InfoIconButton}">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsDangerous}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Border>
-
-        <!-- RIGHT -->
-        <Border Grid.Column="2" Style="{StaticResource ContentCard}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <DataGrid Grid.Row="0"
-                          ItemsSource="{Binding Items}"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False"
-                          HeadersVisibility="Column"
-                          BorderThickness="0"
-                          GridLinesVisibility="None"
-                          RowBackground="White"
-                          AlternatingRowBackground="#FAFAFA"
-                          SelectionMode="Extended"
-                          SelectionUnit="FullRow">
-
-                    <DataGrid.Resources>
-                        <Style TargetType="ScrollBar"
-                               BasedOn="{StaticResource FlatScrollBar}"/>
-                    </DataGrid.Resources>
-
-                    <DataGrid.Columns>
-
-                        <DataGridCheckBoxColumn Width="40"
-                                                Binding="{Binding IsSelected}"/>
-
-                        <DataGridTextColumn
-                            Header="{Binding Source={x:Static loc:Loc.ColCategory}, Path=Value}"
-                            Binding="{Binding Category}"
-                            Width="*"/>
-
-                        <DataGridTextColumn
-                            Header="{Binding Source={x:Static loc:Loc.ColKey}, Path=Value}"
-                            Binding="{Binding KeyPath}"
-                            Width="2*"/>
-
-                        <DataGridTextColumn
-                            Header="{Binding Source={x:Static loc:Loc.ColDetails}, Path=Value}"
-                            Binding="{Binding Details}"
-                            Width="2*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-
-                <!-- BOTTOM -->
-                <Border Grid.Row="1"
-                        Margin="12,10,12,12"
-                        Padding="12"
-                        Background="#FAFAFA"
-                        CornerRadius="10"
-                        SnapsToDevicePixels="True">
-
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="16"
-                                          ShadowDepth="0"
-                                          Opacity="0.18"/>
-                    </Border.Effect>
-
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="12"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Border Grid.Row="0"
-                                Height="6"
-                                CornerRadius="3"
-                                Background="#FFE5E7EB"
-                                ClipToBounds="True"
-                                Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <ProgressBar Height="6"
-                                         IsIndeterminate="True"
-                                         Foreground="{StaticResource Brush.Primary}"
-                                         Background="Transparent"
-                                         BorderThickness="0"/>
-                        </Border>
-
-                        <Grid Grid.Row="1"
-                              Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0"
-                                    Orientation="Horizontal">
-                            <Button Style="{StaticResource PrimaryButton}"
-                                    Content="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"
-                                    Command="{Binding ScanCommand}"/>
-
-                            <Button Style="{StaticResource PrimaryButton}"
-                                    Content="{Binding Source={x:Static loc:Loc.BtnFix}, Path=Value}"
-                                    Command="{Binding FixCommand}"/>
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource Brush.Secondary30}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            CornerRadius="12,12,0,0"
+                            Padding="16,12">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource Icon.Database}" Style="{StaticResource HeaderIconPath}"/>
+                            <TextBlock Text="{Binding Source={x:Static loc:Loc.RegistryScanCategories}, Path=Value}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"/>
                         </StackPanel>
+                    </Border>
 
-                        <CheckBox Grid.Column="1"
-                                  Content="{Binding Source={x:Static loc:Loc.ChkBackup}, Path=Value}"
-                                  IsChecked="{Binding CreateBackup}"
-                                  Margin="20,0,0,0"
-                                  VerticalAlignment="Center"/>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,2,0,0">
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource FlatScrollBar}"/>
+                        </ScrollViewer.Resources>
 
-                        <TextBlock Grid.Column="3"
-                                   Text="{Binding SummaryText}"
-                                   Foreground="{StaticResource Brush.TextMuted}"
-                                   VerticalAlignment="Center"/>
-                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Source={StaticResource CategoriesView}}">
+                            <ItemsControl.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="12,12,12,6">
+                                                <Path x:Name="GroupIcon"
+                                                      Data="{StaticResource Icon.ShieldCheck}"
+                                                      Style="{StaticResource IconPath16}"
+                                                      Width="13"
+                                                      Height="13"
+                                                      Stroke="{DynamicResource Brush.Success}"
+                                                      Margin="0,0,6,0"/>
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource Brush.TextMuted}"
+                                                           FontSize="13"
+                                                           Text="{Binding Name}"/>
+                                            </StackPanel>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Items[0].Risk}" Value="Advanced">
+                                                    <Setter TargetName="GroupIcon" Property="Data" Value="{StaticResource Icon.ShieldAlert}"/>
+                                                    <Setter TargetName="GroupIcon" Property="Stroke" Value="{DynamicResource Brush.Warning}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Items[0].Risk}" Value="Dangerous">
+                                                    <Setter TargetName="GroupIcon" Property="Data" Value="{StaticResource Icon.TriangleAlert}"/>
+                                                    <Setter TargetName="GroupIcon" Property="Stroke" Value="{DynamicResource Brush.Destructive}"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ItemsControl.GroupStyle>
+
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="12,3">
+                                        <CheckBox Content="{Binding Title}"
+                                                  IsChecked="{Binding IsChecked}"
+                                                  IsEnabled="{Binding IsAvailable}"
+                                                  ToolTip="{Binding DisabledReason}"/>
+
+                                        <Button Command="{Binding InfoCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource InfoIconButton}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsDangerous}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource ContentCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource Brush.Secondary30}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            CornerRadius="12,12,0,0"
+                            Padding="16,12">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource Icon.Database}" Style="{StaticResource HeaderIconPath}"/>
+                            <TextBlock Text="{Binding Source={x:Static loc:Loc.RegistryScanResults}, Path=Value}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Grid Grid.Row="1">
+                        <DataGrid ItemsSource="{Binding Items}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  ColumnHeaderStyle="{StaticResource DataGridHeaderSecondary20}"
+                                  RowBackground="Transparent"
+                                  AlternatingRowBackground="Transparent"
+                                  SelectionMode="Extended"
+                                  SelectionUnit="FullRow">
+
+                            <DataGrid.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource FlatScrollBar}"/>
+                            </DataGrid.Resources>
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="46"
+                                                        CellStyle="{StaticResource DataGridCellCheckBoxCompact}">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColCategory}, Path=Value}"
+                                                    Binding="{Binding Category}" Width="*"/>
+
+                                <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColKey}, Path=Value}"
+                                                    Binding="{Binding KeyPath}" Width="2*"/>
+
+                                <DataGridTextColumn Header="{Binding Source={x:Static loc:Loc.ColDetails}, Path=Value}"
+                                                    Binding="{Binding Details}" Width="2*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <Border IsHitTestVisible="False" Background="Transparent">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Search}"
+                                      Style="{StaticResource IconPath16}"
+                                      Width="40"
+                                      Height="40"
+                                      Stroke="{DynamicResource Brush.TextMuted}"
+                                      Opacity="0.4"
+                                      HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.RegistryEmptyHint}, Path=Value}"
+                                           Margin="0,12,0,0"
+                                           Foreground="{DynamicResource Brush.TextMuted}"
+                                           FontSize="13"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="1"
+                Margin="0,16,0,0"
+                Style="{StaticResource ContentCard}"
+                Background="{DynamicResource Brush.BottomBarBg}"
+                Padding="16,12">
+            <StackPanel>
+                <Border
+                        Height="6"
+                        CornerRadius="3"
+                        Background="{DynamicResource Brush.Secondary}"
+                        Margin="0,0,0,8"
+                        ClipToBounds="True"
+                        Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ProgressBar Height="6"
+                                 IsIndeterminate="True"
+                                 Foreground="{DynamicResource Brush.Primary}"
+                                 Background="Transparent"
+                                 BorderThickness="0"/>
                 </Border>
-            </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <Button Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource Icon.Search}" Style="{StaticResource ButtonIconPath}"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.BtnScan}, Path=Value}"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource SecondaryButton}" Command="{Binding FixCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource Icon.Wrench}" Style="{StaticResource ButtonIconPath}"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.BtnFix}, Path=Value}"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="1"
+                              IsChecked="{Binding CreateBackup}"
+                              Margin="16,0,0,0"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Source={x:Static loc:Loc.ChkBackup}, Path=Value}"/>
+                    </CheckBox>
+
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding SummaryText}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               FontFamily="Consolas"/>
+                </Grid>
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>
