@@ -16,7 +16,8 @@
                     </StackPanel>
 
                     <ComboBox Style="{StaticResource FlatComboBox}"
-                              Width="256"
+                              Width="260"
+                              HorizontalAlignment="Left"
                               ItemsSource="{Binding LanguageOptions}"
                               SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
                               DisplayMemberPath="DisplayName"/>

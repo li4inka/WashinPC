@@ -66,7 +66,7 @@
                                                 <TextBlock FontWeight="SemiBold"
                                                            Foreground="{DynamicResource Brush.TextMuted}"
                                                            FontSize="13"
-                                                           Text="{Binding Name}"/>
+                                                           Text="{Binding Items[0].RiskTitle}"/>
                                             </StackPanel>
                                             <DataTemplate.Triggers>
                                                 <DataTrigger Binding="{Binding Items[0].Risk}" Value="Advanced">
@@ -212,8 +212,17 @@
                         CornerRadius="3"
                         Background="{DynamicResource Brush.Secondary}"
                         Margin="0,0,0,8"
-                        ClipToBounds="True"
-                        Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        ClipToBounds="True">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Hidden"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <ProgressBar Height="6"
                                  IsIndeterminate="True"
                                  Foreground="{DynamicResource Brush.Primary}"
