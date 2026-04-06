@@ -41,7 +41,6 @@
                 </ListView>
 
                 <!-- BOTTOM BAR -->
-                <!-- BOTTOM BAR -->
                 <Border Grid.Row="1"
         Margin="12,10,12,12"
         Padding="12"
@@ -57,6 +56,26 @@
                     </Border.Effect>
 
                     <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="12"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Height="6"
+                                CornerRadius="3"
+                                Background="#FFE5E7EB"
+                                ClipToBounds="True"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ProgressBar Height="6"
+                                         IsIndeterminate="True"
+                                         Foreground="{StaticResource Brush.Primary}"
+                                         Background="Transparent"
+                                         BorderThickness="0"/>
+                        </Border>
+
+                        <Grid Grid.Row="1"
+                              Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -94,6 +113,7 @@
                    Text="{Binding SummaryText, Mode=OneWay}"
                    VerticalAlignment="Center"
                    Foreground="{StaticResource Brush.TextMuted}"/>
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>

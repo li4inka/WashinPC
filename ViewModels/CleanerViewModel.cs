@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -126,17 +127,23 @@ namespace WashinPC.ViewModels
             var operationId = "cleaner-clean-" + System.Guid.NewGuid().ToString("N");
             AppLogger.Info("cleaner", "clean.start", "Starting cleaner cleanup.", operationId);
 
+            var selectedKeys = Items
+                .Where(i => i.IsChecked)
+                .Select(i => i.Title?.Key)
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .ToList();
+
+            bool completed = false;
+            bool hasWarnings = false;
+
             try
             {
                 SetBusyText(Loc.StatusCleaning.Value);
                 SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                var selectedKeys = Items
-                    .Where(i => i.IsChecked)
-                    .Select(i => i.Title?.Key)
-                    .Where(k => !string.IsNullOrWhiteSpace(k))
-                    .ToList();
+                var plannedToDelete = await Task.Run(() =>
+                    EstimateCleanerCandidateCount(selectedKeys));
 
                 int deleted = await Task.Run(() =>
                     _engine.CleanSelectedGroups(selectedKeys));
@@ -146,11 +153,21 @@ namespace WashinPC.ViewModels
                 _totalBytes = 0;
                 OnPropertyChanged(nameof(SummaryText));
                 SetStatus(string.Format(Loc.CleanerDeleted.Value, deleted));
+                hasWarnings = deleted < plannedToDelete;
+                completed = true;
                 AppLogger.Info("cleaner", "clean.done", "Cleaner cleanup finished. Deleted: " + deleted, operationId);
             }
             finally
             {
                 IsBusy = false;
+            }
+
+            if (completed)
+            {
+                if (hasWarnings)
+                    DialogService.ShowWarning(Loc.OperationDoneWithWarnings.Value);
+                else
+                    DialogService.ShowInfo(Loc.OperationDone.Value);
             }
         }
 
@@ -166,6 +183,9 @@ namespace WashinPC.ViewModels
                 != DialogResult.Yes)
                 return;
 
+            bool completed = false;
+            bool hasWarnings = false;
+
             try
             {
                 SetBusyText(Loc.CleanerRecycleCleaning.Value);
@@ -174,17 +194,29 @@ namespace WashinPC.ViewModels
 
                 if (!Native.EmptyRecycleBinQuiet())
                 {
-                    DialogService.ShowWarning(Loc.CleanerRecycleFailed.Value);
+                    SetStatus(Loc.CleanerRecycleFailed.Value);
+                    hasWarnings = true;
+                    completed = true;
                     AppLogger.Warn("cleaner", "recycle.fail", "Recycle bin cleanup failed.");
-                    return;
                 }
-
-                SetStatus(Loc.CleanerRecycleDone.Value);
-                AppLogger.Info("cleaner", "recycle.done", "Recycle bin cleaned.");
+                else
+                {
+                    SetStatus(Loc.CleanerRecycleDone.Value);
+                    completed = true;
+                    AppLogger.Info("cleaner", "recycle.done", "Recycle bin cleaned.");
+                }
             }
             finally
             {
                 IsBusy = false;
+            }
+
+            if (completed)
+            {
+                if (hasWarnings)
+                    DialogService.ShowWarning(Loc.OperationDoneWithWarnings.Value);
+                else
+                    DialogService.ShowInfo(Loc.OperationDone.Value);
             }
         }
 
@@ -209,6 +241,27 @@ namespace WashinPC.ViewModels
         {
             if (e.PropertyName == nameof(SizeItemViewModel.IsChecked))
                 CleanCommand.RaiseCanExecuteChanged();
+        }
+
+        private int EstimateCleanerCandidateCount(ICollection<string> selectedKeys)
+        {
+            var keySet = new HashSet<string>(
+                selectedKeys ?? new string[0],
+                System.StringComparer.OrdinalIgnoreCase);
+
+            if (keySet.Count == 0)
+                return 0;
+
+            int totalFiles;
+            long totalBytes;
+            var groups = _engine.ScanDetailed(out totalFiles, out totalBytes);
+
+            return groups
+                .Where(g => keySet.Contains(g.LocalizationKey))
+                .SelectMany(g => g.Files ?? Enumerable.Empty<string>())
+                .Where(f => !string.IsNullOrWhiteSpace(f))
+                .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                .Count();
         }
     }
 }

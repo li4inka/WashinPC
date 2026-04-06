@@ -305,12 +305,15 @@ namespace WashinPC.Localization
             AddPair("copyright.label", "© Kulich Software", "© Kulich Software");
 
             AddPair("cleaner.confirm.clean", "Удалить выбранные файлы?", "Delete selected files?");
+            AddPair("privacy.confirm.clean", "Удалить выбранные приватные данные?", "Delete selected privacy data?");
             AddPair("cleaner.recycle.empty", "Корзина уже пуста.", "Recycle Bin is already empty.");
             AddPair("cleaner.recycle.confirm", "Очистить корзину без возможности восстановления?", "Empty Recycle Bin permanently?");
             AddPair("cleaner.recycle.scanning", "Проверка корзины...", "Checking Recycle Bin...");
             AddPair("cleaner.recycle.cleaning", "Очистка корзины...", "Cleaning Recycle Bin...");
             AddPair("cleaner.recycle.failed", "Не удалось очистить корзину.", "Failed to clean Recycle Bin.");
             AddPair("cleaner.recycle.done", "Корзина очищена.", "Recycle Bin has been cleaned.");
+            AddPair("operation.done", "Операция завершена.", "Operation completed.");
+            AddPair("operation.done.with_warnings", "Операция завершена с предупреждениями.", "Operation completed with warnings.");
 
             AddPair("registry.nothing_selected", "Не выбрано ни одной записи для исправления.", "No registry entries selected.");
             AddPair("registry.fixing", "Исправление реестра...", "Fixing registry...");
@@ -440,12 +443,15 @@ public static class Loc
 
         // ===== CLEANER dialogs =====
         public static readonly LocalizedString CleanerConfirmClean = new LocalizedString("cleaner.confirm.clean");
+        public static readonly LocalizedString PrivacyConfirmClean = new LocalizedString("privacy.confirm.clean");
         public static readonly LocalizedString CleanerRecycleEmpty = new LocalizedString("cleaner.recycle.empty");
         public static readonly LocalizedString CleanerRecycleConfirm = new LocalizedString("cleaner.recycle.confirm");
         public static readonly LocalizedString CleanerRecycleScanning = new LocalizedString("cleaner.recycle.scanning");
         public static readonly LocalizedString CleanerRecycleCleaning = new LocalizedString("cleaner.recycle.cleaning");
         public static readonly LocalizedString CleanerRecycleFailed = new LocalizedString("cleaner.recycle.failed");
         public static readonly LocalizedString CleanerRecycleDone = new LocalizedString("cleaner.recycle.done");
+        public static readonly LocalizedString OperationDone = new LocalizedString("operation.done");
+        public static readonly LocalizedString OperationDoneWithWarnings = new LocalizedString("operation.done.with_warnings");
 
         // ===== REGISTRY dialogs =====
         public static readonly LocalizedString RegistryNoSelection = new LocalizedString("registry.no.selection");
@@ -525,12 +531,15 @@ public static class Loc
             SummaryRegistry.Refresh();
 
             CleanerConfirmClean.Refresh();
+            PrivacyConfirmClean.Refresh();
             CleanerRecycleEmpty.Refresh();
             CleanerRecycleConfirm.Refresh();
             CleanerRecycleScanning.Refresh();
             CleanerRecycleCleaning.Refresh();
             CleanerRecycleFailed.Refresh();
             CleanerRecycleDone.Refresh();
+            OperationDone.Refresh();
+            OperationDoneWithWarnings.Refresh();
 
             RegistryNoSelection.Refresh();
             RegistryConfirmFix.Refresh();

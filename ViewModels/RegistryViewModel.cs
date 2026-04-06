@@ -221,19 +221,26 @@ namespace WashinPC.ViewModels
 
         private async Task FixAsync()
         {
+            var selected = Items.Where(i => i.IsSelected).ToList();
+            if (selected.Count == 0)
+            {
+                SetStatus(Localizer.T("registry.nothing_selected"));
+                return;
+            }
+
+            if (DialogService.ShowConfirm(Loc.RegistryConfirmFix.Value, Localizer.T("registry.info.title"))
+                != DialogResult.Yes)
+                return;
+
             var operationId = "registry-fix-" + Guid.NewGuid().ToString("N");
             AppLogger.Info("registry", "fix.start", "Starting registry fix.", operationId);
+
+            bool completed = false;
+            bool hasWarnings = false;
 
             try
             {
                 IsBusy = true;
-
-                var selected = Items.Where(i => i.IsSelected).ToList();
-                if (selected.Count == 0)
-                {
-                    SetStatus(Localizer.T("registry.nothing_selected"));
-                    return;
-                }
 
                 SetStatus(Localizer.T("registry.fixing"));
 
@@ -310,6 +317,8 @@ namespace WashinPC.ViewModels
                     session.FailedCount);
 
                 SetStatus(statusText);
+                hasWarnings = session.FailedCount > 0;
+                completed = true;
 
                 // после фикса перезапускаем скан (чтобы обновить список)
                 await ScanAsync();
@@ -319,6 +328,14 @@ namespace WashinPC.ViewModels
             finally
             {
                 IsBusy = false;
+            }
+
+            if (completed)
+            {
+                if (hasWarnings)
+                    DialogService.ShowWarning(Loc.OperationDoneWithWarnings.Value);
+                else
+                    DialogService.ShowInfo(Loc.OperationDone.Value);
             }
         }
 

@@ -125,9 +125,36 @@
                         Margin="12,10,12,12"
                         Padding="12"
                         Background="#FAFAFA"
-                        CornerRadius="10">
+                        CornerRadius="10"
+                        SnapsToDevicePixels="True">
+
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="16"
+                                          ShadowDepth="0"
+                                          Opacity="0.18"/>
+                    </Border.Effect>
 
                     <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="12"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Height="6"
+                                CornerRadius="3"
+                                Background="#FFE5E7EB"
+                                ClipToBounds="True"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ProgressBar Height="6"
+                                         IsIndeterminate="True"
+                                         Foreground="{StaticResource Brush.Primary}"
+                                         Background="Transparent"
+                                         BorderThickness="0"/>
+                        </Border>
+
+                        <Grid Grid.Row="1"
+                              Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -149,12 +176,14 @@
                         <CheckBox Grid.Column="1"
                                   Content="{Binding Source={x:Static loc:Loc.ChkBackup}, Path=Value}"
                                   IsChecked="{Binding CreateBackup}"
-                                  Margin="20,0,0,0"/>
+                                  Margin="20,0,0,0"
+                                  VerticalAlignment="Center"/>
 
                         <TextBlock Grid.Column="3"
                                    Text="{Binding SummaryText}"
                                    Foreground="{StaticResource Brush.TextMuted}"
                                    VerticalAlignment="Center"/>
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>

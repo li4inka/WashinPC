@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -8,6 +9,7 @@ using WashinPC.Core.Mvvm;
 using WashinPC.Core.Utils;
 using WashinPC.Engines.Privacy;
 using WashinPC.Localization;
+using WashinPC.Services;
 using WashinPC.ViewModels.Common;
 
 namespace WashinPC.ViewModels
@@ -94,8 +96,20 @@ namespace WashinPC.ViewModels
 
         private async Task CleanAsync()
         {
+            if (DialogService.ShowConfirm(Loc.PrivacyConfirmClean.Value) != DialogResult.Yes)
+                return;
+
             var operationId = "privacy-clean-" + System.Guid.NewGuid().ToString("N");
             AppLogger.Info("privacy", "clean.start", "Starting privacy cleanup.", operationId);
+
+            var selectedKeys = Items
+                .Where(i => i.IsChecked)
+                .Select(i => i.Title?.Key)
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .ToList();
+
+            bool completed = false;
+            bool hasWarnings = false;
 
             try
             {
@@ -103,11 +117,8 @@ namespace WashinPC.ViewModels
                 SetStatus(Loc.StatusCleaning.Value);
                 IsBusy = true;
 
-                var selectedKeys = Items
-                    .Where(i => i.IsChecked)
-                    .Select(i => i.Title?.Key)
-                    .Where(k => !string.IsNullOrWhiteSpace(k))
-                    .ToList();
+                var plannedToDelete = await Task.Run(() =>
+                    EstimatePrivacyCandidateCount(selectedKeys));
 
                 var deleted = await Task.Run(() => _engine.CleanSelectedGroups(selectedKeys));
 
@@ -115,11 +126,21 @@ namespace WashinPC.ViewModels
                 _totalFiles = 0;
                 _totalBytes = 0;
                 OnPropertyChanged(nameof(SummaryText));
+                hasWarnings = deleted < plannedToDelete;
+                completed = true;
                 AppLogger.Info("privacy", "clean.done", "Privacy cleanup finished. Deleted: " + deleted, operationId);
             }
             finally
             {
                 IsBusy = false;
+            }
+
+            if (completed)
+            {
+                if (hasWarnings)
+                    DialogService.ShowWarning(Loc.OperationDoneWithWarnings.Value);
+                else
+                    DialogService.ShowInfo(Loc.OperationDone.Value);
             }
         }
 
@@ -144,6 +165,27 @@ namespace WashinPC.ViewModels
         {
             if (e.PropertyName == nameof(SizeItemViewModel.IsChecked))
                 CleanCommand.RaiseCanExecuteChanged();
+        }
+
+        private int EstimatePrivacyCandidateCount(ICollection<string> selectedKeys)
+        {
+            var keySet = new HashSet<string>(
+                selectedKeys ?? new string[0],
+                System.StringComparer.OrdinalIgnoreCase);
+
+            if (keySet.Count == 0)
+                return 0;
+
+            int totalFiles;
+            long totalBytes;
+            var groups = _engine.Scan(out totalFiles, out totalBytes);
+
+            return groups
+                .Where(g => keySet.Contains(g.LocalizationKey))
+                .SelectMany(g => g.Files ?? Enumerable.Empty<string>())
+                .Where(f => !string.IsNullOrWhiteSpace(f))
+                .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                .Count();
         }
     }
 }
