@@ -3,6 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:WashinPC.Localization"
         WindowStartupLocation="CenterOwner"
+        FontFamily="{StaticResource Font.App}"
+        FontSize="14"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
         WindowStyle="None"
@@ -11,9 +13,9 @@
 
     <Window.Resources>
         <Style x:Key="ConfirmYesButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-            <Setter Property="Foreground" Value="{StaticResource Brush.Text}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#FFD9DEE7"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -22,22 +24,23 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
                                 CornerRadius="8"
                                 SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                               RecognizesAccessKey="True"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.PrimaryHover}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.PrimaryHover}"/>
                                 <Setter Property="Foreground" Value="White"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.PrimaryHover}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.PrimaryPressed}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.PrimaryPressed}"/>
                                 <Setter Property="Foreground" Value="White"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.PrimaryPressed}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.PrimaryPressed}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -53,8 +56,8 @@
     <Border
         Width="420"
         CornerRadius="12"
-        Background="#F7F8FA"
-        BorderBrush="#1A000000"
+        Background="{DynamicResource Brush.PanelBg}"
+        BorderBrush="{DynamicResource Brush.PanelBorder}"
         BorderThickness="1"
         SnapsToDevicePixels="True">
 
@@ -63,7 +66,7 @@
 
             <!-- ACCENT STRIP -->
             <Border
-                Width="6"
+                Width="5"
                 Background="{Binding AccentBrush}"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
@@ -81,8 +84,7 @@
                 <!-- TITLE -->
                 <TextBlock
                     Text="{Binding Title}"
-                    FontSize="16"
-                    FontWeight="SemiBold"
+                    FontWeight="Medium"
                     Margin="0,0,0,10"/>
 
                 <!-- MESSAGE -->

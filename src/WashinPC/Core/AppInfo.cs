@@ -30,11 +30,14 @@ namespace WashinPC.Core
             Year = DateTime.Now.Year;
 
 #if DEBUG
-            IsBeta = true;
-            Channel = "BETA";
-#else
+            Channel = "DEBUG";
             IsBeta = false;
+#elif BETA
+            Channel = "BETA";
+            IsBeta = true;
+#else
             Channel = "RELEASE";
+            IsBeta = false;
 #endif
         }
 

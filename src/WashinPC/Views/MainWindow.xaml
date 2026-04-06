@@ -8,137 +8,110 @@
         MinWidth="1280"
         MinHeight="720"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Brush.AppBackground}"
+        Background="{DynamicResource Brush.AppBackground}"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True">
 
-    <!-- WINDOW CONTENT -->
-    <Grid Background="{StaticResource Brush.AppBackground}">
+    <Grid Background="{DynamicResource Brush.AppBackground}">
+        <Border Margin="8" Style="{StaticResource AppContainer}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="232"/>
+                    <ColumnDefinition Width="1"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- APP CARD (RemoteHelper) -->
-        <Border
-            Margin="20"
-            Background="White"
-            CornerRadius="14"
-            SnapsToDevicePixels="True">
-
-            <!-- SHADOW -->
-            <Border.Effect>
-                <DropShadowEffect
-                    BlurRadius="28"
-                    ShadowDepth="0"
-                    Opacity="0.22"/>
-            </Border.Effect>
-
-            <!-- CLIPPED CONTENT -->
-            <Border CornerRadius="14"
-                    ClipToBounds="True"
-                    Background="White">
-
-                <Grid>
+                <Grid Grid.Column="0" Background="{DynamicResource Brush.SidebarBg}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="1"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- ================= HEADER ================= -->
-                    <DockPanel Margin="14,10">
+                    <Border Grid.Row="0" Padding="18,18,18,14" BorderBrush="{DynamicResource Brush.SidebarBorder}" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="28" Height="28" CornerRadius="8" Background="{DynamicResource Brush.Primary}">
+                                <Path Data="{StaticResource Icon.Sparkles}" Style="{StaticResource IconPath16}" Width="14" Height="14" Stroke="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
 
-                        <!-- BRAND -->
-                        <StackPanel Orientation="Horizontal"
-                                    DockPanel.Dock="Left">
+                            <TextBlock Text="{Binding AppInfo.ProductName}" Margin="10,0,0,0" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
 
-                            <TextBlock Text="{Binding AppInfo.ProductName}"
-                                       FontSize="15"
-                                       FontWeight="Bold"
-                                       VerticalAlignment="Center"/>
-
-                            <Border Style="{StaticResource ChannelBadge}"
-                                    Margin="8,0,0,0">
-                                <TextBlock Text="{Binding AppInfo.Channel}"
-                                           Style="{StaticResource ChannelBadgeText}"/>
+                            <Border>
+                                <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource ChannelBadge}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AppInfo.Channel}" Value="RELEASE">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.Success}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding AppInfo.Channel}" Value="DEBUG">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.Warning}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding AppInfo.Channel}" Value="BETA">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.Primary}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Style="{StaticResource ChannelBadgeText}" Text="{Binding AppInfo.Channel}"/>
                             </Border>
                         </StackPanel>
+                    </Border>
 
-                    </DockPanel>
+                    <ListBox x:Name="Sidebar"
+                             Grid.Row="1"
+                             Style="{StaticResource SidebarList}"
+                             ItemContainerStyle="{StaticResource SidebarItem}"
+                             SelectionChanged="Sidebar_SelectionChanged">
 
-                    <!-- HEADER SEPARATOR -->
-                    <Border Grid.Row="1"
-                            Background="{StaticResource Brush.Border}"/>
-
-                    <!-- ================= BODY ================= -->
-                    <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="210"/>
-                            <ColumnDefinition Width="1"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- SIDEBAR -->
-                        <Grid Grid.Column="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <!-- NAV -->
-                            <ListBox x:Name="Sidebar"
-         Grid.Row="0"
-         Style="{StaticResource SidebarList}"
-         ItemContainerStyle="{StaticResource SidebarItem}"
-         SelectionChanged="Sidebar_SelectionChanged">
-
-                                <ListBoxItem Tag="Cleaner"
-                 Content="{Binding Source={x:Static loc:Loc.TabCleaner}, Path=Value}"/>
-
-                                <ListBoxItem Tag="Privacy"
-                 Content="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}"/>
-
-                                <ListBoxItem Tag="Registry"
-                 Content="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}"/>
-
-                                <!-- NEW TOOL -->
-                                <ListBoxItem Tag="ContextMenu"
-                 Content="{Binding Source={x:Static loc:Loc.TabContextMenu}, Path=Value}"/>
-
-                                <ListBoxItem Tag="Settings"
-                                            Content="{Binding Source={x:Static loc:Loc.TabSettings}, Path=Value}"/>
-
-                            </ListBox>
-                            <!-- SIDEBAR INFO -->
-                            <StackPanel Grid.Row="1"
-                                        Margin="14,10"
-                                        VerticalAlignment="Bottom"
-                                        Opacity="0.75">
-
-                                <TextBlock Text="{Binding AppInfo.Version}"
-                                           FontSize="11"
-                                           Foreground="{StaticResource Brush.TextMuted}"/>
-
-                                <TextBlock Text="{Binding AppInfo.Build}"
-                                           FontSize="11"
-                                           Foreground="{StaticResource Brush.TextMuted}"/>
-
-                                <TextBlock Text="{Binding AppInfo.Company}"
-                                           Margin="0,6,0,0"
-                                           FontSize="11"
-                                           Foreground="{StaticResource Brush.TextMuted}"/>
+                        <ListBoxItem Tag="Cleaner">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Trash2}" Style="{StaticResource SidebarIconPath}" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.TabCleaner}, Path=Value}" VerticalAlignment="Center"/>
                             </StackPanel>
-                        </Grid>
+                        </ListBoxItem>
 
-                        <!-- SIDEBAR SEPARATOR -->
-                        <Border Grid.Column="1"
-                                Background="{StaticResource Brush.Border}"/>
+                        <ListBoxItem Tag="Privacy">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Shield}" Style="{StaticResource SidebarIconPath}" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.TabPrivacy}, Path=Value}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
 
-                        <!-- CONTENT -->
-                        <ContentControl x:Name="ContentHost"
-                                        Grid.Column="2"
-                                        Margin="12"/>
-                    </Grid>
+                        <ListBoxItem Tag="Registry">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Database}" Style="{StaticResource SidebarIconPath}" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.TabRegistry}, Path=Value}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
+
+                        <ListBoxItem Tag="ContextMenu">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Menu}" Style="{StaticResource SidebarIconPath}" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.TabContextMenu}, Path=Value}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
+
+                        <ListBoxItem Tag="Settings">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Settings}" Style="{StaticResource SidebarIconPath}" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding Source={x:Static loc:Loc.TabSettings}, Path=Value}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
+
+                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{DynamicResource Brush.SidebarBorder}" BorderThickness="0,1,0,0">
+                        <StackPanel Opacity="0.88">
+                            <TextBlock Text="{Binding AppInfo.Version}" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}"/>
+                            <TextBlock Text="{Binding AppInfo.Build}" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}"/>
+                            <TextBlock Text="{Binding AppInfo.Company}" Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
-            </Border>
 
+                <Border Grid.Column="1" Style="{StaticResource ThinSeparator}"/>
+
+                <ContentControl x:Name="ContentHost" Grid.Column="2" Margin="0"/>
+            </Grid>
         </Border>
     </Grid>
 </Window>
