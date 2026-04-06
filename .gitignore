@@ -116,3 +116,12 @@ artifacts/
 
 # Crash dumps
 crashlogs/
+
+# Root-level local caches/artifacts
+/.dotnet-cli/
+/.dotnet-home/
+/bin/
+/obj/
+/artifacts/
+/.nuget/packages/
+/TestResults/
