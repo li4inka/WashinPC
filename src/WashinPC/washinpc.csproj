@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
@@ -9,11 +9,6 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="tests\**\*.cs" />
-    <None Include="tests\**\*" Exclude="tests\**\*.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="app.manifest" />
@@ -30,4 +25,3 @@
     </PackageReference>
   </ItemGroup>
 </Project>
-
