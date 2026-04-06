@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using WashinPC.Core;
 
 namespace WashinPC.Localization
@@ -41,8 +40,6 @@ namespace WashinPC.Localization
             }
         }
 
-        // ===================== SAFE DICT =====================
-
         private static Dictionary<string, string> SafeDict(params (string k, string v)[] items)
         {
             var dict = new Dictionary<string, string>();
@@ -51,13 +48,11 @@ namespace WashinPC.Localization
                 if (!dict.ContainsKey(k))
                     dict[k] = v;
             }
+
             return dict;
         }
 
-        // ===================== RU =====================
-
         private static readonly Dictionary<string, string> RU = SafeDict(
-            // App / Tabs
             ("app.title", "WashinPC"),
             ("tab.cleaner", "Очистка"),
             ("tab.registry", "Реестр"),
@@ -65,8 +60,7 @@ namespace WashinPC.Localization
             ("tab.settings", "Настройки"),
             ("tab.contextmenu", "Контекстное меню"),
 
-            // Buttons
-            ("btn.scan", "Сканировать"),
+            ("btn.scan", "Скан"),
             ("btn.clean", "Очистить"),
             ("btn.fix", "Исправить"),
             ("btn.recycle", "Очистить корзину"),
@@ -76,42 +70,35 @@ namespace WashinPC.Localization
             ("btn.enable", "Включить"),
             ("btn.disable", "Отключить"),
 
-            // Checkboxes
             ("chk.aggr", "Агрессивный режим"),
             ("chk.backup", "Создать резервную копию"),
 
-            // Columns
             ("col.source", "Источник"),
             ("col.size", "Размер"),
             ("col.category", "Категория"),
             ("col.key", "Ключ"),
             ("col.details", "Детали"),
 
-            // Status / Summary
             ("status.scanning", "Сканирование…"),
             ("status.searching", "Поиск…"),
             ("status.cleaning", "Очистка…"),
             ("summary.files", "Файлов: {0}, Размер: {1}"),
-            ("summary.registry", "Найдено записей: {0}"),
+            ("summary.registry", "Записей найдено: {0}"),
 
-            // Cleaner
             ("cleaner.scanning", "Сканирование очистки…"),
             ("cleaner.searching", "Поиск временных файлов…"),
             ("cleaner.deleted", "Удалено файлов: {0}"),
 
-            // Privacy
             ("privacy.scanning", "Сканирование приватности…"),
             ("privacy.searching", "Поиск приватных данных…"),
 
-            // Registry
-            ("registry.categories", "Категории очистки"),
+            ("registry.categories", "Категории реестра"),
             ("registry.scanning", "Сканирование реестра…"),
-            ("registry.searching", "Поиск проблемных записей реестра…"),
+            ("registry.searching", "Поиск проблем реестра…"),
             ("registry.fixed", "Исправлено проблем реестра: {0}"),
-            ("registry.no.selection", "Нет выбранных проблем для исправления."),
+            ("registry.no.selection", "Не выбраны проблемы реестра для исправления."),
             ("registry.confirm.fix", "Исправить выбранные проблемы реестра?\nРекомендуется создать резервные копии."),
 
-            // Registry categories (ЕДИНЫЙ БЛОК)
             ("registry.cat.uninstall", "Записи деинсталляции"),
             ("registry.cat.shared_dlls", "Shared DLLs"),
             ("registry.cat.unused_file_ext", "Неиспользуемые расширения файлов"),
@@ -127,27 +114,8 @@ namespace WashinPC.Localization
             ("registry.cat.start_menu", "Меню Пуск"),
             ("registry.cat.sound_events", "Звуковые события"),
 
-            // Registry info (ЕДИНЫЙ БЛОК)
             ("registry.info.title", "Внимание"),
 
-            ("registry.cat.info.registry.cat.active_x",
-             "ActiveX и COM-записи. Удаление может привести к неработоспособности программ."),
-
-            ("registry.cat.info.registry.cat.fonts",
-             "Записи установленных шрифтов. Ошибочное удаление может повлиять на интерфейс Windows."),
-
-            ("registry.cat.info.registry.cat.mui_cache",
-             "Кэш локализованных ресурсов. Обычно безопасно, но может замедлить первый запуск программ."),
-
-            ("registry.cat.info.registry.cat.start_menu",
-             "Записи меню «Пуск». Удаление может привести к исчезновению ярлыков."),
-
-            ("registry.cat.info.registry.cat.sound_events",
-             "Системные звуковые события. Может повлиять на звуки Windows."),
-
-
-
-            // Context menu
             ("contextmenu.summary", "Элементов: {0}"),
             ("contextmenu.applied", "Применено изменений: {0}"),
             ("contextmenu.col.disable", "Откл."),
@@ -159,20 +127,17 @@ namespace WashinPC.Localization
             ("contextmenu.col.registry", "Реестр"),
             ("contextmenu.btn.apply", "Применить"),
 
-            ("cleaner.user_temp", "Пользовательский TEMP"),
-            ("cleaner.windows_temp", "Windows TEMP"),
-            ("cleaner.prefetch", "Prefetch"),
-            ("cleaner.recent", "Недавние документы"),
+            ("cleaner.user_temp", "User TEMP files"),
+            ("cleaner.windows_temp", "Windows TEMP files"),
+            ("cleaner.prefetch", "Prefetch files"),
+            ("cleaner.recent", "Recent documents"),
 
             ("privacy.chrome", "Google Chrome"),
             ("privacy.edge", "Microsoft Edge"),
 
             ("settings.language", "Язык интерфейса"),
             ("settings.instant.apply", "Изменения применяются сразу")
-
         );
-
-        // ===================== EN =====================
 
         private static readonly Dictionary<string, string> EN = SafeDict(
             ("app.title", "WashinPC"),
@@ -236,24 +201,7 @@ namespace WashinPC.Localization
             ("registry.cat.start_menu", "Start Menu"),
             ("registry.cat.sound_events", "Sound Events"),
 
-            // Registry info (ЕДИНЫЙ БЛОК)
             ("registry.info.title", "Warning"),
-
-            ("registry.cat.info.registry.cat.active_x",
-             "ActiveX и COM. Removing it may cause programs to stop working.."),
-
-            ("registry.cat.info.registry.cat.fonts",
-             "Entries of installed fonts. Incorrect removal may affect the Windows interface."),
-
-            ("registry.cat.info.registry.cat.mui_cache",
-             "Localized resource cache. Generally safe, but may slow down initial program launches."),
-
-            ("registry.cat.info.registry.cat.start_menu",
-             "Start Menu entries. Deleting them may cause shortcuts to disappear."),
-
-            ("registry.cat.info.registry.cat.sound_events",
-             "System sound events. May affect Windows sounds."),
-
 
             ("contextmenu.summary", "Items: {0}"),
             ("contextmenu.applied", "Changes applied: {0}"),
@@ -276,7 +224,6 @@ namespace WashinPC.Localization
 
             ("settings.language", "Interface language"),
             ("settings.instant.apply", "Changes are applied instantly")
-
         );
 
         static Localizer()
@@ -308,23 +255,46 @@ namespace WashinPC.Localization
             AddPair("privacy.confirm.clean", "Удалить выбранные приватные данные?", "Delete selected privacy data?");
             AddPair("cleaner.recycle.empty", "Корзина уже пуста.", "Recycle Bin is already empty.");
             AddPair("cleaner.recycle.confirm", "Очистить корзину без возможности восстановления?", "Empty Recycle Bin permanently?");
-            AddPair("cleaner.recycle.scanning", "Проверка корзины...", "Checking Recycle Bin...");
-            AddPair("cleaner.recycle.cleaning", "Очистка корзины...", "Cleaning Recycle Bin...");
+            AddPair("cleaner.recycle.scanning", "Проверка корзины…", "Checking Recycle Bin…");
+            AddPair("cleaner.recycle.cleaning", "Очистка корзины…", "Cleaning Recycle Bin…");
             AddPair("cleaner.recycle.failed", "Не удалось очистить корзину.", "Failed to clean Recycle Bin.");
             AddPair("cleaner.recycle.done", "Корзина очищена.", "Recycle Bin has been cleaned.");
             AddPair("operation.done", "Операция завершена.", "Operation completed.");
             AddPair("operation.done.with_warnings", "Операция завершена с предупреждениями.", "Operation completed with warnings.");
 
             AddPair("registry.nothing_selected", "Не выбрано ни одной записи для исправления.", "No registry entries selected.");
-            AddPair("registry.fixing", "Исправление реестра...", "Fixing registry...");
+            AddPair("registry.fixing", "Исправление реестра…", "Fixing registry…");
             AddPair("registry.fixed.summary", "Исправлено: {0}, пропущено: {1}, ошибок: {2}", "Fixed: {0}, skipped: {1}, errors: {2}");
             AddPair("registry.fixed.with.backup", "Исправление завершено с резервными копиями.", "Fix completed with backups.");
             AddPair("registry.restorepoint.failed.confirm", "Не удалось создать точку восстановления.\nПродолжить без неё?\n{0}", "System restore point was not created.\nContinue without it?\n{0}");
             AddPair("registry.restorepoint.cancelled", "Исправление отменено пользователем.", "Fix cancelled by user.");
-            AddPair("registry.safe_only.disabled", "Недоступно в режиме Safe-only.", "Unavailable in Safe-only mode.");
-            AddPair("registry.risk.safe", "Безопасно", "Safe");
-            AddPair("registry.risk.advanced", "Продвинутый", "Advanced");
-            AddPair("registry.risk.dangerous", "Рискованный", "Dangerous");
+            AddPair("registry.safe_only.disabled", "Недоступно в безопасном режиме.", "Unavailable in Safe-only mode.");
+            AddPair("registry.risk.safe", "Безопасные", "Safe");
+            AddPair("registry.risk.advanced", "Расширенные", "Advanced");
+            AddPair("registry.risk.dangerous", "Опасные", "Dangerous");
+
+            AddPair("registry.cat.info.registry.cat.active_x", "ActiveX и COM-записи. Удаление может привести к неработоспособности программ.", "ActiveX and COM entries. Removal may break installed programs.");
+            AddPair("registry.cat.info.registry.cat.fonts", "Записи установленных шрифтов. Ошибочное удаление может повлиять на интерфейс Windows.", "Installed font entries. Incorrect removal may affect the Windows interface.");
+            AddPair("registry.cat.info.registry.cat.mui_cache", "Кэш локализованных ресурсов. Обычно безопасно, но может замедлить первый запуск программ.", "Localized resource cache. Usually safe, but may slow first launches of programs.");
+            AddPair("registry.cat.info.registry.cat.start_menu", "Записи меню Пуск. Удаление может привести к исчезновению ярлыков.", "Start Menu entries. Deletion may remove shortcuts.");
+            AddPair("registry.cat.info.registry.cat.sound_events", "Системные звуковые события. Может повлиять на звуки Windows.", "System sound events. May affect Windows sounds.");
+
+            AddPair("registry.details.path_missing", "Файл не найден: {0}", "Path not found: {0}");
+            AddPair("registry.details.uninstall_missing", "Деинсталлятор не найден: {0}", "Uninstall target missing: {0}");
+            AddPair("registry.details.file_missing", "Файл не найден: {0}", "File not found: {0}");
+            AddPair("registry.details.unused_extension", "Расширение не связано с приложениями: {0}", "Unused extension without valid association: {0}");
+            AddPair("registry.details.com_server_missing", "COM-сервер не найден: {0}", "COM server missing: {0}");
+            AddPair("registry.details.typelib_missing", "Библиотека типов не найдена: {0}", "Type library missing: {0}");
+            AddPair("registry.details.app_command_missing", "Команда приложения не найдена: {0}", "Application command target missing: {0}");
+            AddPair("registry.details.font_missing", "Файл шрифта не найден: {0}", "Font file missing: {0}");
+            AddPair("registry.details.help_missing", "Файл справки не найден: {0}", "Help file missing: {0}");
+            AddPair("registry.details.installer_package_missing", "Пакет установщика не найден: {0}", "Installer package missing: {0}");
+            AddPair("registry.details.obsolete_reference", "Устаревшая ссылка: {0}", "Obsolete reference: {0}");
+            AddPair("registry.details.startup_missing", "Элемент автозагрузки не найден: {0}", "Startup target missing: {0}");
+            AddPair("registry.details.menuorder_reset", "Сброс повреждённого порядка меню", "Reset corrupted menu order");
+            AddPair("registry.details.muicache_missing", "MUI-ресурс не найден: {0}", "MUI resource missing: {0}");
+            AddPair("registry.details.sound_missing", "Звуковой файл не найден: {0}", "Sound file missing: {0}");
+            AddPair("registry.details.service_image_missing", "Файл службы не найден: {0}", "Service image file missing: {0}");
 
             AddPair("contextmenu.toggle.unsupported", "Безопасное переключение для этого типа пункта не поддерживается.", "Safe toggle is not supported for this menu item type.");
             AddPair("contextmenu.delete.unsupported", "Удаление для этой записи не поддерживается.", "Delete is not supported for this menu entry.");
@@ -338,23 +308,34 @@ namespace WashinPC.Localization
             AddPair("contextmenu.target.folder_background", "Фон папки", "Folder Background");
             AddPair("contextmenu.target.desktop", "Рабочий стол", "Desktop");
             AddPair("contextmenu.target.drive", "Диск", "Drive");
-            AddPair("contextmenu.kind.shellex", "ShellEx обработчик", "ShellEx Handler");
-            AddPair("contextmenu.kind.shellverb", "Shell команда", "Shell Verb");
+            AddPair("contextmenu.kind.shellex", "ShellEx Handler", "ShellEx Handler");
+            AddPair("contextmenu.kind.shellverb", "Shell Verb", "Shell Verb");
             AddPair("contextmenu.scope.hkcu", "Текущий пользователь", "Current User");
             AddPair("contextmenu.scope.hklm", "Вся система", "All Users (Machine)");
 
             AddPair("settings.registry_expert_mode", "Экспертный режим реестра", "Registry expert mode");
-            AddPair("settings.registry_expert_hint", "Разблокирует категории «Продвинутый» и «Рискованный» в разделе реестра. Используйте только при полном понимании рисков.", "Unlocks Advanced and Dangerous categories in the registry section. Use only if you understand the risks.");
+            AddPair("settings.registry_expert_hint", "Открывает категории Advanced и Dangerous в разделе реестра. Используйте только если понимаете риски.", "Unlocks Advanced and Dangerous categories in the registry section. Use only if you understand the risks.");
             AddPair("settings.lang.russian", "Русский", "Russian");
-            AddPair("settings.lang.english", "Английский", "English");
+            AddPair("settings.lang.english", "English", "English");
+            AddPair("settings.appearance", "Оформление", "Appearance");
+            AddPair("settings.theme.auto", "Auto", "Auto");
+            AddPair("settings.theme.light", "Light", "Light");
+            AddPair("settings.theme.dark", "Dark", "Dark");
+            AddPair("settings.theme.using", "Используется тема: {0}", "Using {0} theme");
+            AddPair("settings.theme.auto.status", "Автовыбор по системе", "Auto-detected theme");
+
+            AddPair("cleaner.section.system_files", "Системные файлы", "System Files");
+            AddPair("privacy.section.browser_data", "Данные браузеров", "Browser Data");
+            AddPair("registry.scan_categories", "Категории сканирования", "Scan Categories");
+            AddPair("registry.scan_results", "Результаты сканирования", "Scan Results");
+            AddPair("registry.empty_hint", "Запустите сканирование для поиска проблем реестра", "Run a scan to find registry issues");
         }
-        // ===================== API =====================
 
         public static void Initialize()
         {
             try
             {
-                string saved = AppSettings.Language;
+                var saved = AppSettings.Language;
                 _current = saved == "ru" ? Lang.RU : Lang.EN;
             }
             catch
@@ -377,10 +358,7 @@ namespace WashinPC.Localization
         }
     }
 
-
-// ===================== LOC =====================
-
-public static class Loc
+    public static class Loc
     {
         public static readonly LocalizedString TabCleaner = new LocalizedString("tab.cleaner");
         public static readonly LocalizedString TabPrivacy = new LocalizedString("tab.privacy");
@@ -405,6 +383,16 @@ public static class Loc
         public static readonly LocalizedString SettingsRegistryExpertHint = new LocalizedString("settings.registry_expert_hint");
         public static readonly LocalizedString SettingsLangRussian = new LocalizedString("settings.lang.russian");
         public static readonly LocalizedString SettingsLangEnglish = new LocalizedString("settings.lang.english");
+        public static readonly LocalizedString SettingsAppearance = new LocalizedString("settings.appearance");
+        public static readonly LocalizedString SettingsThemeAuto = new LocalizedString("settings.theme.auto");
+        public static readonly LocalizedString SettingsThemeLight = new LocalizedString("settings.theme.light");
+        public static readonly LocalizedString SettingsThemeDark = new LocalizedString("settings.theme.dark");
+
+        public static readonly LocalizedString CleanerSectionSystemFiles = new LocalizedString("cleaner.section.system_files");
+        public static readonly LocalizedString PrivacySectionBrowserData = new LocalizedString("privacy.section.browser_data");
+        public static readonly LocalizedString RegistryScanCategories = new LocalizedString("registry.scan_categories");
+        public static readonly LocalizedString RegistryScanResults = new LocalizedString("registry.scan_results");
+        public static readonly LocalizedString RegistryEmptyHint = new LocalizedString("registry.empty_hint");
 
         public static readonly LocalizedString ColSource = new LocalizedString("col.source");
         public static readonly LocalizedString ColSize = new LocalizedString("col.size");
@@ -416,32 +404,25 @@ public static class Loc
         public static readonly LocalizedString BuildLabel = new LocalizedString("build.label");
         public static readonly LocalizedString Copyright = new LocalizedString("copyright.label");
 
-        // ===== STATUS / VM TEXTS =====
         public static readonly LocalizedString StatusScanning = new LocalizedString("status.scanning");
         public static readonly LocalizedString StatusSearching = new LocalizedString("status.searching");
         public static readonly LocalizedString StatusCleaning = new LocalizedString("status.cleaning");
 
-        // ===== CLEANER =====
         public static readonly LocalizedString CleanerScanning = new LocalizedString("cleaner.scanning");
         public static readonly LocalizedString CleanerSearching = new LocalizedString("cleaner.searching");
         public static readonly LocalizedString CleanerDeleted = new LocalizedString("cleaner.deleted");
 
-        // ===== PRIVACY =====
         public static readonly LocalizedString PrivacyScanning = new LocalizedString("privacy.scanning");
         public static readonly LocalizedString PrivacySearching = new LocalizedString("privacy.searching");
 
-        // ===== REGISTRY =====
         public static readonly LocalizedString RegistryCategories = new LocalizedString("registry.categories");
-
         public static readonly LocalizedString RegistryScanning = new LocalizedString("registry.scanning");
         public static readonly LocalizedString RegistrySearching = new LocalizedString("registry.searching");
         public static readonly LocalizedString RegistryFixed = new LocalizedString("registry.fixed");
 
-        // ===== SUMMARY =====
         public static readonly LocalizedString SummaryFiles = new LocalizedString("summary.files");
         public static readonly LocalizedString SummaryRegistry = new LocalizedString("summary.registry");
 
-        // ===== CLEANER dialogs =====
         public static readonly LocalizedString CleanerConfirmClean = new LocalizedString("cleaner.confirm.clean");
         public static readonly LocalizedString PrivacyConfirmClean = new LocalizedString("privacy.confirm.clean");
         public static readonly LocalizedString CleanerRecycleEmpty = new LocalizedString("cleaner.recycle.empty");
@@ -453,12 +434,10 @@ public static class Loc
         public static readonly LocalizedString OperationDone = new LocalizedString("operation.done");
         public static readonly LocalizedString OperationDoneWithWarnings = new LocalizedString("operation.done.with_warnings");
 
-        // ===== REGISTRY dialogs =====
         public static readonly LocalizedString RegistryNoSelection = new LocalizedString("registry.no.selection");
         public static readonly LocalizedString RegistryConfirmFix = new LocalizedString("registry.confirm.fix");
         public static readonly LocalizedString RegistryFixedWithBackup = new LocalizedString("registry.fixed.with.backup");
 
-        // ===== Context Menu =====
         public static readonly LocalizedString TabContextMenu = new LocalizedString("tab.contextmenu");
 
         public static readonly LocalizedString ContextMenuColDisable = new LocalizedString("contextmenu.col.disable");
@@ -474,7 +453,6 @@ public static class Loc
         public static readonly LocalizedString ContextMenuBtnRefresh = new LocalizedString("contextmenu.btn.refresh");
         public static readonly LocalizedString BtnDisable = new LocalizedString("btn.disable");
         public static readonly LocalizedString BtnEnable = new LocalizedString("btn.enable");
-
 
         public static void RefreshAll()
         {
@@ -501,6 +479,16 @@ public static class Loc
             SettingsRegistryExpertHint.Refresh();
             SettingsLangRussian.Refresh();
             SettingsLangEnglish.Refresh();
+            SettingsAppearance.Refresh();
+            SettingsThemeAuto.Refresh();
+            SettingsThemeLight.Refresh();
+            SettingsThemeDark.Refresh();
+
+            CleanerSectionSystemFiles.Refresh();
+            PrivacySectionBrowserData.Refresh();
+            RegistryScanCategories.Refresh();
+            RegistryScanResults.Refresh();
+            RegistryEmptyHint.Refresh();
 
             ColSource.Refresh();
             ColSize.Refresh();
@@ -560,9 +548,6 @@ public static class Loc
             ContextMenuBtnRefresh.Refresh();
             BtnDisable.Refresh();
             BtnEnable.Refresh();
-
-
         }
     }
 }
-
