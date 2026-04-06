@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "washinpc", "washinpc.csproj", "{ABB9B9D6-86CD-8B14-5006-FF0B19EF1339}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "washinpc", "src\WashinPC\washinpc.csproj", "{ABB9B9D6-86CD-8B14-5006-FF0B19EF1339}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WashinPC.Tests", "tests\WashinPC.Tests\WashinPC.Tests.csproj", "{8241D7AB-BF93-4ED8-89D9-7A64A1D61CA3}"
 EndProject

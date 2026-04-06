@@ -12,6 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\washinpc.csproj" />
+    <ProjectReference Include="..\..\src\WashinPC\washinpc.csproj" />
   </ItemGroup>
 </Project>

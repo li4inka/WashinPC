@@ -14,9 +14,9 @@ WashinPC is a Windows utility focused on safe cleanup and predictable maintenanc
 ## Build And Test
 
 ```powershell
-dotnet restore .\washinpc.csproj --configfile .\NuGet.config
+dotnet restore .\src\WashinPC\washinpc.csproj --configfile .\NuGet.config
 dotnet restore .\tests\WashinPC.Tests\WashinPC.Tests.csproj --configfile .\NuGet.config
-dotnet build .\washinpc.csproj --no-restore
+dotnet build .\src\WashinPC\washinpc.csproj --no-restore
 dotnet build .\tests\WashinPC.Tests\WashinPC.Tests.csproj --no-restore /p:BuildProjectReferences=false
 ```
 
