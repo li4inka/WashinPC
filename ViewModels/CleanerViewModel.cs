@@ -1,3 +1,5 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -65,6 +67,8 @@ namespace WashinPC.ViewModels
 
                 OnPropertyChanged(nameof(SummaryText));
             };
+
+            Items.CollectionChanged += OnItemsCollectionChanged;
         }
 
         protected override void OnBusyChanged()
@@ -182,6 +186,29 @@ namespace WashinPC.ViewModels
             {
                 IsBusy = false;
             }
+        }
+
+        private void OnItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.OldItems != null)
+            {
+                foreach (var oldItem in e.OldItems.OfType<SizeItemViewModel>())
+                    oldItem.PropertyChanged -= OnCleanerItemPropertyChanged;
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (var newItem in e.NewItems.OfType<SizeItemViewModel>())
+                    newItem.PropertyChanged += OnCleanerItemPropertyChanged;
+            }
+
+            CleanCommand.RaiseCanExecuteChanged();
+        }
+
+        private void OnCleanerItemPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SizeItemViewModel.IsChecked))
+                CleanCommand.RaiseCanExecuteChanged();
         }
     }
 }
