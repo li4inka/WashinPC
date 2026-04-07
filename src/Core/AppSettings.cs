@@ -16,7 +16,7 @@ namespace WashinPC.Core
 
         public static string ThemeMode
         {
-            get { return ReadString("ThemeMode", "auto"); }
+            get { return ReadString("ThemeMode", "light"); }
             set { WriteString("ThemeMode", value); }
         }
 

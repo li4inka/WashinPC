@@ -122,8 +122,8 @@ namespace WashinPC.ViewModels
             RegistryExpertMode = AppSettings.RegistryExpertMode;
 
             var initialThemeMode = AppSettings.ThemeMode;
-            if (!ThemeService.IsKnownMode(initialThemeMode))
-                initialThemeMode = ThemeService.ModeAuto;
+            if (!ThemeService.IsKnownMode(initialThemeMode) || initialThemeMode == ThemeService.ModeAuto)
+                initialThemeMode = ThemeService.ModeLight;
 
             ThemeService.Apply(initialThemeMode);
             _themeMode = initialThemeMode;
