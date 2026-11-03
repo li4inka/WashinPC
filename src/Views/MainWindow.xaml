@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:WashinPC.Localization"
         Title="{Binding AppInfo.Version, StringFormat=WashinPC {0}}"
+        Icon="/WashinPC;component/Assets/WashinPC.ico"
         Width="1280"
         Height="720"
         MinWidth="900"
@@ -30,9 +31,7 @@
 
                     <Border Grid.Row="0" Padding="18,18,18,14" BorderBrush="{DynamicResource Brush.SidebarBorder}" BorderThickness="0,0,0,1">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Border Width="28" Height="28" CornerRadius="8" Background="{DynamicResource Brush.Primary}">
-                                <Path Data="{StaticResource Icon.Sparkles}" Style="{StaticResource IconPath16}" Width="14" Height="14" Stroke="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
+                            <Image Width="32" Height="32" Source="/WashinPC;component/Assets/WashinPC.png" RenderOptions.BitmapScalingMode="HighQuality"/>
 
                             <TextBlock Text="{Binding AppInfo.ProductName}" Margin="10,0,0,0" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
 

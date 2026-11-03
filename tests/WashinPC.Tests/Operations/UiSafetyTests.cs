@@ -122,9 +122,7 @@ namespace WashinPC.Tests.Operations
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 using (var file = File.Create(Path.Combine(assets, "screenshot-" + lang.ToString().ToLowerInvariant() + ".png"))) encoder.Save(file);
             }
-            var icon = new IconBitmapDecoder(new Uri(Path.Combine(root, "src", "Assets", "WashinPC.ico")), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-            var logo = new PngBitmapEncoder(); logo.Frames.Add(icon.Frames.OrderByDescending(x => x.PixelWidth).First());
-            using (var file = File.Create(Path.Combine(assets, "logo.png"))) logo.Save(file);
+            File.Copy(Path.Combine(root, "src", "Assets", "WashinPC.png"), Path.Combine(assets, "logo.png"), true);
             // Repeated rendered cached navigation, without opening a window or changing real data.
             var samples = new List<string> { "sample,cached_navigation_ms" };
             for (var sample = 0; sample < 6; sample++)

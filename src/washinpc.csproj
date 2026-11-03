@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\WashinPC.png" />
+    <Resource Include="Assets\WashinPC.ico" />
     <Resource Include="Assets\Fonts\Inter\*.ttf" />
     <Content Include="Assets\Icons\lucide\*.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
