@@ -119,6 +119,13 @@ namespace WashinPC.ViewModels
 
             RefreshLanguageOptions();
             _selectedLanguage = LanguageOptions.First(x => x.Value == Localizer.Current);
+            Localizer.LanguageChanged += () =>
+            {
+                RefreshLanguageOptions();
+                _selectedLanguage = LanguageOptions.First(x => x.Value == Localizer.Current);
+                OnPropertyChanged(nameof(SelectedLanguage));
+                OnPropertyChanged(nameof(ThemeStatusText));
+            };
             RegistryExpertMode = AppSettings.RegistryExpertMode;
 
             var initialThemeMode = AppSettings.ThemeMode;

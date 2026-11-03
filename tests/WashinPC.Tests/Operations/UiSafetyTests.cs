@@ -176,6 +176,29 @@ namespace WashinPC.Tests.Operations
                 using (var file = File.Create(Path.Combine(assets, "screenshot-" + lang.ToString().ToLowerInvariant() + ".png"))) encoder.Save(file);
             }
             File.Copy(Path.Combine(root, "src", "Assets", "WashinPC.png"), Path.Combine(assets, "logo.png"), true);
+            foreach (var page in new[] { PageType.ContextMenu, PageType.Settings })
+            {
+                sidebar.SelectedIndex = page == PageType.ContextMenu ? 3 : 4;
+                NavigationService.Navigate(page);
+                var host = (ContentControl)window.FindName("ContentHost");
+                if (page == PageType.ContextMenu)
+                {
+                    var menu = (ContextMenuViewModel)((FrameworkElement)host.Content).DataContext;
+                    menu.Items.Clear();
+                    for (var i = 0; i < 24; i++) menu.Items.Add(new ContextMenuItemViewModel(new WashinPC.Engines.ContextMenu.ContextMenuEntry
+                    {
+                        Name = "Demo action " + (i + 1), Source = "HKCU", IsEnabled = true,
+                        Target = WashinPC.Engines.ContextMenu.ContextMenuTarget.AnyFile,
+                        RegistryPath = @"Software\Classes\*\shell\Demo", RelativeKeyPath = @"*\shell\Demo"
+                    }));
+                    Localizer.Current = Lang.EN; Localizer.Current = Lang.RU;
+                }
+                var visual = (FrameworkElement)window.Content;
+                visual.Measure(new Size(1280, 720)); visual.Arrange(new Rect(0, 0, 1280, 720)); visual.UpdateLayout(); Pump(); visual.UpdateLayout();
+                var bitmap = new RenderTargetBitmap(1280, 720, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using (var file = File.Create(Path.Combine(assets, "screenshot-" + page.ToString().ToLowerInvariant() + ".png"))) encoder.Save(file);
+            }
             // Repeated rendered cached navigation, without opening a window or changing real data.
             var samples = new List<string> { "sample,cached_navigation_ms" };
             for (var sample = 0; sample < 6; sample++)

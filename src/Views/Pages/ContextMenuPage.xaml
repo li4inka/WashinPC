@@ -12,10 +12,14 @@
         <Border Grid.Row="0" Style="{StaticResource ContentCard}">
             <DataGrid ItemsSource="{Binding Items}"
                       AutoGenerateColumns="False"
+                      FontFamily="{DynamicResource Font.App}"
+                      FontSize="13"
+                      MinRowHeight="36"
+                      ColumnHeaderHeight="44"
                       CanUserAddRows="False"
                       HeadersVisibility="Column"
                       GridLinesVisibility="None"
-                      ColumnHeaderStyle="{StaticResource DataGridHeaderSecondary50}"
+                      ColumnHeaderStyle="{StaticResource DataGridHeaderSecondary20}"
                       RowBackground="Transparent"
                       AlternatingRowBackground="Transparent"
                       SelectionMode="Extended"
@@ -23,6 +27,12 @@
                       SnapsToDevicePixels="True">
 
                 <DataGrid.Resources>
+                    <Style x:Key="MenuCellText" TargetType="TextBlock">
+                        <Setter Property="Margin" Value="12,8"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    </Style>
                     <Style TargetType="ScrollBar" BasedOn="{StaticResource FlatScrollBar}"/>
                 </DataGrid.Resources>
 
@@ -58,27 +68,27 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Width="2*"
+                    <DataGridTextColumn ElementStyle="{StaticResource MenuCellText}" Width="2*"
                                         Header="{Binding Source={x:Static loc:Loc.ContextMenuColName}, Path=Value}"
                                         Binding="{Binding Name}"/>
 
-                    <DataGridTextColumn Width="*"
+                    <DataGridTextColumn ElementStyle="{StaticResource MenuCellText}" Width="*"
                                         Header="{Binding Source={x:Static loc:Loc.ContextMenuColTarget}, Path=Value}"
                                         Binding="{Binding Target}"/>
 
-                    <DataGridTextColumn Width="*"
+                    <DataGridTextColumn ElementStyle="{StaticResource MenuCellText}" Width="*"
                                         Header="{Binding Source={x:Static loc:Loc.ContextMenuColKind}, Path=Value}"
                                         Binding="{Binding Kind}"/>
 
-                    <DataGridTextColumn Width="*"
+                    <DataGridTextColumn ElementStyle="{StaticResource MenuCellText}" Width="*"
                                         Header="{Binding Source={x:Static loc:Loc.ContextMenuColScope}, Path=Value}"
                                         Binding="{Binding Scope}"/>
 
-                    <DataGridTextColumn Width="Auto"
+                    <DataGridTextColumn ElementStyle="{StaticResource MenuCellText}" Width="Auto"
                                         Header="{Binding Source={x:Static loc:Loc.ContextMenuColSource}, Path=Value}"
                                         Binding="{Binding Source}"/>
 
-                    <DataGridTextColumn Width="2*"
+                    <DataGridTextColumn ElementStyle="{StaticResource MenuCellText}" Width="2*"
                                         Header="{Binding Source={x:Static loc:Loc.ContextMenuColRegistry}, Path=Value}"
                                         Binding="{Binding RegistryPath}"/>
                 </DataGrid.Columns>
@@ -89,7 +99,7 @@
                 Margin="0,16,0,0"
                 Style="{StaticResource ContentCard}"
                 Background="{DynamicResource Brush.BottomBarBg}"
-                Padding="16,12">
+                Padding="16,12" MinHeight="76">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

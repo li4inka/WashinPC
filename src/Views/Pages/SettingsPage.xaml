@@ -1,60 +1,58 @@
-﻿<UserControl x:Class="WashinPC.Views.Pages.SettingsPage"
+<UserControl x:Class="WashinPC.Views.Pages.SettingsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:WashinPC.Localization">
-
+    <UserControl.Resources>
+        <Style x:Key="SettingsCardHeader" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Brush.Secondary30}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="CornerRadius" Value="12,12,0,0"/>
+            <Setter Property="Padding" Value="16,12"/>
+        </Style>
+    </UserControl.Resources>
     <Grid Margin="24">
-        <StackPanel Width="576" HorizontalAlignment="Left">
-
-            <Border Style="{StaticResource ContentCard}" Margin="0,0,0,24" Padding="24">
+        <StackPanel>
+            <Border Style="{StaticResource ContentCard}" Margin="0,0,0,16">
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <Path Data="{StaticResource Icon.Globe}" Style="{StaticResource HeaderIconPath}"/>
-                        <TextBlock Text="{Binding Source={x:Static loc:Loc.SettingsLanguage}, Path=Value}"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"/>
+                    <Border Style="{StaticResource SettingsCardHeader}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource Icon.Globe}" Style="{StaticResource HeaderIconPath}"/>
+                            <TextBlock Text="{Binding Source={x:Static loc:Loc.SettingsLanguage}, Path=Value}"
+                                       FontSize="14" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Margin="16">
+                        <ComboBox Style="{StaticResource FlatComboBox}" Width="260" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding LanguageOptions}"
+                                  SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" DisplayMemberPath="DisplayName"/>
+                        <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource Brush.TextMuted}"
+                                   FontSize="13" TextWrapping="Wrap"
+                                   Text="{Binding Source={x:Static loc:Loc.SettingsInstantApply}, Path=Value}"/>
                     </StackPanel>
-
-                    <ComboBox Style="{StaticResource FlatComboBox}"
-                              Width="260"
-                              HorizontalAlignment="Left"
-                              ItemsSource="{Binding LanguageOptions}"
-                              SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
-                              DisplayMemberPath="DisplayName"/>
-
-                    <TextBlock Margin="0,10,0,0"
-                               Foreground="{DynamicResource Brush.TextMuted}"
-                               FontSize="12"
-                               Text="{Binding Source={x:Static loc:Loc.SettingsInstantApply}, Path=Value}"/>
                 </StackPanel>
             </Border>
-
-            <Border Style="{StaticResource ContentCard}" Padding="24">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <CheckBox Grid.Column="0"
-                              IsChecked="{Binding RegistryExpertMode, Mode=TwoWay}"
-                              Margin="0,2,10,0"
-                              VerticalAlignment="Top"/>
-
-                    <StackPanel Grid.Column="1">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <Path Data="{StaticResource Icon.ShieldAlert}" Style="{StaticResource HeaderIconPath}" Stroke="{DynamicResource Brush.Warning}"/>
+            <Border Style="{StaticResource ContentCard}">
+                <StackPanel>
+                    <Border Style="{StaticResource SettingsCardHeader}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource Icon.ShieldAlert}" Style="{StaticResource HeaderIconPath}"
+                                  Stroke="{DynamicResource Brush.Warning}"/>
                             <TextBlock Text="{Binding Source={x:Static loc:Loc.SettingsRegistryExpertMode}, Path=Value}"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"/>
+                                       FontSize="14" FontWeight="SemiBold"/>
                         </StackPanel>
-
-                        <TextBlock Text="{Binding Source={x:Static loc:Loc.SettingsRegistryExpertHint}, Path=Value}"
-                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-                </Grid>
+                    </Border>
+                    <Grid Margin="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox IsChecked="{Binding RegistryExpertMode, Mode=TwoWay}"
+                                  ToolTip="{Binding Source={x:Static loc:Loc.SettingsRegistryExpertMode}, Path=Value}"
+                                  Margin="0,2,12,0" VerticalAlignment="Top"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Source={x:Static loc:Loc.SettingsRegistryExpertHint}, Path=Value}"
+                                   Foreground="{DynamicResource Brush.TextMuted}" FontSize="13" TextWrapping="Wrap"/>
+                    </Grid>
+                </StackPanel>
             </Border>
         </StackPanel>
     </Grid>
