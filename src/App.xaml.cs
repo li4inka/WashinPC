@@ -41,6 +41,7 @@ namespace WashinPC
 
         protected override void OnExit(ExitEventArgs e)
         {
+            ThemeService.StopWatching();
             AppLogger.Info("app", "shutdown", "Application shutdown.");
             base.OnExit(e);
         }

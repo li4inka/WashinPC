@@ -1,19 +1,43 @@
-# Draft release: WashinPC 1.2.0-preview.1
+# Подготовка релиза WashinPC 1.2.0-preview.2
 
-The familiar WashinPC interface, with stricter checks before cleanup and mandatory registry backups.
+- Тег: `v1.2.0-preview.2`
+- Заголовок: `WashinPC 1.2.0 Preview 2 — восстановление копий и расширенная очистка браузеров`
+- Тип выпуска: **Pre-release**.
+- Краткое описание репозитория для GitHub About: `Windows cleaner with browser privacy controls, registry backup and restore, context-menu management, and a bilingual WPF interface. GPL-3.0.`
 
-## Downloads
+## Описание релиза
 
-- `WashinPC-1.2.0-preview.1-win-x64.zip`
-- `WashinPC-1.2.0-preview.1-win-x86.zip`
-- Matching `.sha256` files
+Второй предварительный выпуск WashinPC 1.2.0: встроенное восстановление резервных копий, расширенная очистка браузеров и исправления интерфейса.
 
-Requires .NET Framework 4.8 and administrator rights. Extract the complete archive and launch `WashinPC.exe`. Packages are unsigned; no Authenticode certificate has been applied.
+### Что нового
 
-File deletion is permanent. The Backups button opens registry/context-menu backups; it cannot recover cleaned files. Follow the accompanying view-specific import instructions and compare current values before restoring.
+- **Резервные копии:** каталог со сравнением текущих и сохранённых значений, подтверждением восстановления и копией текущего состояния перед записью. Поддерживаются старые `.reg`; новые копии содержат метаданные и контрольную сумму.
+- **Приватность:** отдельная очистка истории, cookies и кэша Chrome, Edge, Firefox, Opera, Opera GX, Brave и Яндекс Браузера. История Firefox очищается с сохранением закладок; пароли, автозаполнение, сессии и скачанные файлы не являются целями очистки.
+- **Реестр:** исправление выбранных записей всех категорий, общий флажок выбора и проверка фактического результата записи. Изменившиеся или исчезнувшие объекты не выдаются за успешно исправленные.
+- **Службы Windows:** отдельная категория в экспертном режиме, выключенная по умолчанию. Остановленные службы с собственным отсутствующим EXE можно отключить и восстановить через диспетчер служб Windows.
+- **Оформление:** системная, светлая и тёмная темы. Системный режим сохраняется и реагирует на смену темы Windows; исправлена читаемость таблиц и списков в тёмной теме.
 
-Only missing zero-count SharedDLL entries and missing HelpFile values are automatically fixable in this preview. Other registry findings are diagnostic even in expert mode. Chrome and Edge must be closed for privacy cleanup.
+### Установка
 
-See [CHANGELOG](../CHANGELOG.md) and [local validation and limitations](validation/README.md). Builds and automated rendering do not establish compatibility with every target Windows version or display scale.
+1. Скачайте архив для своей системы и полностью распакуйте его.
+2. Сохраните все DLL и подпапки из архива рядом с приложением.
+3. Запустите `WashinPC.exe` от имени администратора. Требуется **.NET Framework 4.8**.
 
-This text is prepared locally. No public release or tag has been published.
+Файлы для прикрепления к релизу:
+
+- `WashinPC-1.2.0-preview.2-win-x64.zip`
+- `WashinPC-1.2.0-preview.2-win-x64.zip.sha256`
+- `WashinPC-1.2.0-preview.2-win-x86.zip`
+- `WashinPC-1.2.0-preview.2-win-x86.zip.sha256`
+
+### Проверки и ограничения
+
+Сборки x64/x86 проверяются локальным набором из 73 тестов: 72 проходят, один интеграционный тест изменения временной службы пропускается на этом хосте из-за отсутствия повышенных прав Windows. Изменение и восстановление служб проверены через тестовый адаптер; чтение конфигурации — через Windows API. Интерфейс проверен отрисовкой в RU/EN и обеих темах.
+
+Это **неподписанная предварительная версия**. Windows 7 SP1, 8.1, 10 и 11 остаются целевыми системами; полная проверка каждой ОС, реальных версий браузеров и физического DPI ещё не завершена.
+
+Удаление файлов и очистка приватных данных необратимы средствами WashinPC. Каталог копий восстанавливает реестр, контекстное меню и конфигурацию служб, но не очищенные файлы. Перед очисткой браузеры необходимо закрыть.
+
+## Статус подготовки
+
+Текст и portable-пакеты подготовлены локально. Новый тег и публичный релиз не создавались. Перед созданием тега необходимо закоммитить предназначенные для выпуска изменения. Подробности проверок: [validation](validation/README.md).

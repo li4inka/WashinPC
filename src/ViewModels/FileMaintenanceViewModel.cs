@@ -21,11 +21,14 @@ namespace WashinPC.ViewModels
         private readonly CleanerEngine _cleaner = new CleanerEngine();
         private readonly PrivacyEngine _browser = new PrivacyEngine();
         private FileScanPlan _plan = new FileScanPlan();
+        private readonly System.Collections.Generic.Dictionary<string, bool> _selection = new System.Collections.Generic.Dictionary<string, bool>();
         public ObservableCollection<SizeItemViewModel> Items { get; } = new ObservableCollection<SizeItemViewModel>();
         public RelayCommand ScanCommand { get; }
         public RelayCommand CleanCommand { get; }
         public RelayCommand RecycleCommand { get; }
-        public string SummaryText => Localizer.T("summary.files", _plan.Files.Count, FileSizeFormatter.Format(_plan.Files.Sum(x => x.Bytes)));
+        public string SummaryText => _privacy
+            ? Localizer.T("privacy.summary", _plan.Files.Count(x => x.Kind == FileOperationKind.DeleteFile), _plan.Files.Sum(x => x.Records), FileSizeFormatter.Format(_plan.Files.Sum(x => x.Bytes)))
+            : Localizer.T("summary.files", _plan.Files.Count, FileSizeFormatter.Format(_plan.Files.Sum(x => x.Bytes)));
         protected FileMaintenanceViewModel(bool privacy)
         {
             _privacy = privacy;
@@ -51,11 +54,12 @@ namespace WashinPC.ViewModels
         }
         private void Populate()
         {
-            var selection = Items.ToDictionary(x => x.Title.Key, x => x.IsChecked);
+            foreach (var item in Items) _selection[item.Title.Key] = item.IsChecked;
             Items.Clear();
             foreach (var group in _plan.Files.GroupBy(x => x.Group))
                 Items.Add(new SizeItemViewModel { Title = new LocalizedString(group.Key), TotalBytes = group.Sum(x => x.Bytes),
-                    IsChecked = selection.ContainsKey(group.Key) && selection[group.Key] });
+                    Records = group.Sum(x => x.Records), IsDatabase = group.Any(x => x.Kind != FileOperationKind.DeleteFile),
+                    IsChecked = _selection.ContainsKey(group.Key) && _selection[group.Key] });
             OnPropertyChanged(nameof(SummaryText));
         }
         internal void SetPlan(FileScanPlan plan) { _plan = plan; Populate(); }
@@ -85,6 +89,7 @@ namespace WashinPC.ViewModels
         internal static void ShowResult(OperationResult result)
         {
             AppUiState.Instance.SetStatus(() => Localizer.T("op.result", result.Applied, result.Skipped, result.Failed, FileSizeFormatter.Format(result.DeletedBytes))
+                + ((result.CleanedRecords > 0 || result.DeletedFiles > 0) ? " " + Localizer.T("privacy.result", result.DeletedFiles, result.CleanedRecords) : "")
                 + (result.Cancelled ? " " + Localizer.T("op.cancelled") : ""));
             AppUiState.Instance.SetDetails(() => Describe(result.Items) + (result.Backups.Count > 0 ? "\n" + Localizer.T("op.backups_count", result.Backups.Count) : ""));
             Core.Logging.AppLogger.Info("operation", "done", "Applied=" + result.Applied + "; skipped=" + result.Skipped + "; failed=" + result.Failed + "; bytes=" + result.DeletedBytes);

@@ -247,11 +247,13 @@
     <Geometry x:Key="Icon.Monitor">M2 5A2 2 0 0 1 4 3H20A2 2 0 0 1 22 5V15A2 2 0 0 1 20 17H4A2 2 0 0 1 2 15Z M8 21H16 M12 17V21</Geometry>
 
     <Style TargetType="ListView">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
     <Style TargetType="ListViewItem">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Margin" Value="0,0,0,2"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -279,6 +281,7 @@
     </Style>
 
     <Style TargetType="DataGrid">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
@@ -315,6 +318,7 @@
     </Style>
 
     <Style TargetType="DataGridRow">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border50}"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -575,6 +579,12 @@
                             <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="Box" Property="Background" Value="{DynamicResource Brush.Primary}"/>
                             <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource Brush.Primary}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="{x:Null}">
+                            <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="Check" Property="Data" Value="M 1 5 L 9 5"/>
+                            <Setter TargetName="Check" Property="Stretch" Value="None"/>
+                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource Brush.Primary}"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}"/>

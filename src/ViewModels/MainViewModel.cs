@@ -20,7 +20,7 @@ namespace WashinPC.ViewModels
         public MainViewModel()
         {
             BackupsCommand = new RelayCommand(() => {
-                try { Process.Start(new ProcessStartInfo("explorer.exe", "\"" + RegistryBackup.GetBackupRoot() + "\"") { UseShellExecute = true }); }
+                try { new WashinPC.Views.Dialogs.BackupsWindow { Owner = System.Windows.Application.Current?.MainWindow }.ShowDialog(); }
                 catch { DialogService.ShowError(Localizer.T("op.failed")); }
             }, () => !Ui.IsBusy);
             DetailsCommand = new RelayCommand(() => DialogService.ShowInfo(Ui.Details), () => !Ui.IsBusy && !string.IsNullOrEmpty(Ui.Details));

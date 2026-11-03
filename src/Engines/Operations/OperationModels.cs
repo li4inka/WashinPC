@@ -11,6 +11,8 @@ namespace WashinPC.Engines.Operations
         internal string Path, Reason;
         internal ItemStatus Status;
         internal long Bytes;
+        internal long Records;
+        internal bool DeletedFile;
     }
     internal sealed class OperationResult
     {
@@ -21,11 +23,17 @@ namespace WashinPC.Engines.Operations
         internal int Failed => Items.Count(x => x.Status == ItemStatus.Failed);
         internal int Skipped => Items.Count - Applied - Failed;
         internal long DeletedBytes => Items.Where(x => x.Status == ItemStatus.Applied).Sum(x => x.Bytes);
+        internal long CleanedRecords => Items.Where(x => x.Status == ItemStatus.Applied).Sum(x => x.Records);
+        internal int DeletedFiles => Items.Count(x => x.Status == ItemStatus.Applied && x.DeletedFile);
     }
+    internal enum FileOperationKind { DeleteFile, ChromiumHistory, ChromiumCookies, FirefoxHistory, FirefoxCookies }
     internal sealed class FileCandidate
     {
         internal string Path, Root, Group, Fingerprint, Browser;
         internal long Bytes;
+        internal FileOperationKind Kind;
+        internal bool IsDatabase;
+        internal long Records;
     }
     internal sealed class FileScanPlan
     {
@@ -56,20 +64,27 @@ namespace WashinPC.Engines.Operations
                 if (token.IsCancellationRequested) { result.Cancelled = true; item.Status = ItemStatus.Cancelled; item.Reason = "op.cancelled"; continue; }
                 try
                 {
-                    if (candidate.Browser != null && !Privacy.PrivacyEngine.DatabaseAvailable(candidate.Path, candidate.Browser))
+                    if (!Privacy.PrivacyEngine.CandidateAvailable(candidate))
                         throw new InvalidOperationException("op.browser_busy");
+                    if (candidate.Kind != FileOperationKind.DeleteFile)
+                    {
+                        item.Records = Privacy.BrowserDatabase.Clean(candidate, token);
+                        item.Status = ItemStatus.Applied; item.Reason = "op.applied";
+                        plan.Files.Remove(candidate); progress?.Report(result.Items.Count); continue;
+                    }
                     using (var lease = new DirectoryLease(System.IO.Path.GetDirectoryName(candidate.Path)))
                     using (var file = SafeFile.Open(candidate.Path, candidate.Root, true))
                     {
                         if (file.Fingerprint != candidate.Fingerprint) throw new InvalidOperationException("op.changed");
-                        if (candidate.Browser != null && !Privacy.PrivacyEngine.DatabaseAvailable(candidate.Path, candidate.Browser))
+                        if (!Privacy.PrivacyEngine.CandidateAvailable(candidate))
                             throw new InvalidOperationException("op.browser_busy");
                         file.Delete();
                     }
-                    item.Status = ItemStatus.Applied; item.Bytes = candidate.Bytes; item.Reason = "op.applied";
+                    item.Status = ItemStatus.Applied; item.Bytes = candidate.Bytes; item.DeletedFile = true; item.Reason = "op.applied";
                     plan.Files.Remove(candidate);
                 }
                 catch (InvalidOperationException ex) { item.Status = ItemStatus.Skipped; item.Reason = ex.Message; }
+                catch (OperationCanceledException) { result.Cancelled = true; item.Status = ItemStatus.Cancelled; item.Reason = "op.cancelled"; }
                 catch (Exception) { item.Status = ItemStatus.Failed; item.Reason = "op.file_unavailable"; }
                 progress?.Report(result.Items.Count);
             }

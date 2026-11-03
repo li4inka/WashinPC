@@ -14,6 +14,88 @@ namespace WashinPC.Tests.Operations
     [DoNotParallelize]
     public class RegistrySafetyTests
     {
+        [DataTestMethod]
+        [DataRow("registry.cat.startup")]
+        [DataRow("registry.cat.obsolete_software")]
+        [DataRow("registry.cat.uninstall")]
+        public void AdditionalCategoriesAreRepairableWithBackupAndRevalidation(string category)
+        {
+            var id = "WashinPC.Tests-" + Guid.NewGuid().ToString("N");
+            var startup = category == "registry.cat.startup";
+            var path = startup ? @"Software\Microsoft\Windows\CurrentVersion\Run"
+                : @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + id;
+            var directory = Path.Combine(Path.GetTempPath(), id);
+            Directory.CreateDirectory(directory);
+            var missing = Path.Combine(directory, "missing.exe");
+            RegistryBackup.TestBackupRoot = Path.Combine(directory, "backups");
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(path))
+                {
+                    if (startup)
+                    {
+                        key.SetValue(id, "\"" + missing + "\" --startup");
+                        key.SetValue(id + "-second", "\"" + missing + "\"");
+                    }
+                    else
+                    {
+                        key.SetValue("DisplayName", id);
+                        key.SetValue("UninstallString", "\"" + missing + "\"");
+                        key.SetValue("InstallLocation", missing);
+                        key.SetValue("Marker", "preserve");
+                    }
+                }
+                var scanner = new RegistryScanner();
+                var issues = scanner.ScanAll(selected: new System.Collections.Generic.HashSet<string> { category })
+                    .Where(x => x.Hive == RegistryHive.CurrentUser && (startup
+                        ? x.ValueName == id || x.ValueName == id + "-second" : x.KeyPath.EndsWith(id))).ToArray();
+                Assert.IsTrue(issues.Length > 0);
+                Assert.IsTrue(issues.All(x => x.CanFix));
+                var issue = issues[0];
+                var context = new RegistryFixContext { AllowMutation = true };
+                File.WriteAllText(missing, "restored");
+                Assert.AreEqual(RegistryFixResult.Skipped, issue.Fix(context));
+                Assert.AreEqual(0, context.Backups.Count);
+                File.Delete(missing);
+                Assert.AreEqual(RegistryFixResult.Fixed, issue.Fix(context));
+                Assert.AreEqual(1, context.Backups.Count);
+                StringAssert.Contains(File.ReadAllText(context.Backups[0]), startup ? id : "Marker");
+                Assert.AreEqual(RegistryFixResult.Skipped, issue.Fix(context));
+                if (startup)
+                {
+                    var second = issues.First(x => x.View == issue.View && x.ValueName != issue.ValueName);
+                    Assert.AreEqual(RegistryFixResult.Fixed, second.Fix(context));
+                    using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(path))
+                    {
+                        Assert.IsNull(key.GetValue(id));
+                        Assert.IsNull(key.GetValue(id + "-second"));
+                    }
+                }
+                else if (category == "registry.cat.obsolete_software")
+                    using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(path))
+                    {
+                        Assert.IsNull(key.GetValue("InstallLocation"));
+                        Assert.AreEqual("preserve", key.GetValue("Marker"));
+                    }
+                else
+                    using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(path)) Assert.IsNull(key);
+            }
+            finally
+            {
+                if (startup)
+                {
+                    using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(path, true))
+                    {
+                        key?.DeleteValue(id, false);
+                        key?.DeleteValue(id + "-second", false);
+                    }
+                }
+                else Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path, false);
+                RegistryBackup.TestBackupRoot = null;
+                Directory.Delete(directory, true);
+            }
+        }
+
         [TestMethod] public void HelpFileRepairRevalidatesAndPreservesOtherValues()
         {
             var id = "WashinPC.Tests-" + Guid.NewGuid().ToString("N");

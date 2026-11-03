@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Microsoft.Win32;
 
 namespace WashinPC.Engines.Registry
@@ -41,7 +42,14 @@ namespace WashinPC.Engines.Registry
             }
 
             if (revalidate != null && !revalidate()) return RegistryFixResult.Skipped;
-            var result = legacyFix(false);
+            RegistryFixResult result;
+            try { result = legacyFix(false); }
+            catch (Exception ex) when (ex is IOException || ex is ArgumentException)
+            {
+                using (var root = RegistryKey.OpenBaseKey(hive, view))
+                using (var key = root.OpenSubKey(ExtractSubKeyPath(hive, keyPathUi)))
+                    return key == null ? RegistryFixResult.Skipped : RegistryFixResult.Failed;
+            }
             if (result == RegistryFixResult.None)
                 return RegistryFixResult.Skipped;
 

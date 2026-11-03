@@ -6,9 +6,9 @@
 
 **A familiar, responsive Windows cleaner — with checks before every change.**
 
-Temporary files, Chrome and Edge privacy data, conservative registry fixes, and context-menu controls in a native WPF interface.
+Temporary files, browser privacy data, registry fixes and restoration, and context-menu controls in a native WPF interface.
 
-![Preview](https://img.shields.io/badge/status-1.2.0--preview.1-orange)
+![Preview](https://img.shields.io/badge/status-1.2.0--preview.2-orange)
 ![WPF](https://img.shields.io/badge/UI-WPF-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
@@ -26,21 +26,21 @@ Temporary files, Chrome and Edge privacy data, conservative registry fixes, and 
 | Section | What it does |
 |---|---|
 | Cleaner | Scans user/Windows temporary folders, Recent shortcuts and optional Prefetch. Deletes only selected files retained from that scan. |
-| Privacy | Recognizes Chrome/Edge Default and Profile folders. Select history and cookies separately; running browsers and SQLite recovery files cause a skip. |
-| Registry | Defaults to missing zero-count SharedDLL entries and missing HelpFile values. Other categories remain diagnostic, including in expert mode. |
+| Privacy | Chrome, Edge, Firefox, Opera/GX, Brave and Yandex profiles. Separate history/cookies/cache; running browsers and SQLite recovery files cause a skip. |
+| Registry | Repair selected findings across all scan categories, with revalidation and mandatory backups. Windows services are a separate expert-only category, unchecked by default. |
 | Context Menu | Disable, enable or delete supported shell entries, with backup and revalidation. Machine-level extension blocks are preserved. |
-| Settings | Switch English/Russian and enable additional registry diagnostics. |
+| Settings | English/Russian, System/Light/Dark themes, and expert registry categories. System theme follows Windows while the app is running. |
 
-Cached pages preserve selections. Work runs in the background, with cancellation between processing steps and a shared guard against overlapping operations. The light visual design is retained; small work areas can scroll.
+Cached pages preserve selections. Work runs in the background, with cancellation between processing steps and a shared guard against overlapping operations. Light and dark themes are supported; small work areas can scroll.
 
 ## Quick start
 
-This checkout prepares **1.2.0-preview.1**. A public release has not been published by this change. Build a portable archive below; check [Releases](https://github.com/li4inka/WashinPC/releases) for packages actually published by the maintainer.
+This checkout prepares **1.2.0-preview.2**. A public release has not been published by this change. Build a portable archive below; check [Releases](https://github.com/li4inka/WashinPC/releases) for packages actually published by the maintainer.
 
-1. Extract the complete `WashinPC-1.2.0-preview.1-win-x64.zip` or `-win-x86.zip`.
+1. Extract the complete `WashinPC-1.2.0-preview.2-win-x64.zip` or `-win-x86.zip`.
 2. Run `WashinPC.exe` and accept UAC. Use the account whose data you intend to maintain.
 3. Scan, select groups or eligible entries, then confirm the operation.
-4. Read the result and **Details** for skipped or failed items. **Backups** opens registry recovery files.
+4. Read the result and **Details** for skipped or failed items. **Backups** opens the restore catalog: compare changes, confirm restoration, or open the backup folder.
 
 ### Requirements and status
 
@@ -51,11 +51,11 @@ This checkout prepares **1.2.0-preview.1**. A public release has not been publis
 
 ## Before you clean
 
-**File cleanup, browser database removal and emptying the Recycle Bin are permanent.** They do not use quarantine. Removing cookies signs you out of websites; downloaded files, passwords and bookmarks are not privacy-cleanup targets.
+**File cleanup, clearing browser data and emptying the Recycle Bin are permanent.** They do not use quarantine. Removing cookies signs you out of websites; downloaded files, passwords and bookmarks are not privacy-cleanup targets.
 
 A scan is a retained selection of objects. Newly created files are not silently added to cleanup. Changed, busy, linked, offline, encrypted, compressed, sparse or named-stream files are skipped. Successful file bytes are counted; this is not a measurement of the volume's free-space change.
 
-Registry and context-menu writes require a verified backup. Backup failure blocks the corresponding change. A system restore point is also attempted before registry fixes; choosing to continue without it does **not** waive backup requirements. Registry exports preserve value types and include the x86/x64 import command. Compare current values before importing: manual import can overwrite newer changes and is not automatic conflict-aware recovery.
+Registry and context-menu writes require a verified backup. Backup failure blocks the corresponding change. A system restore point is also attempted before registry fixes; choosing to continue without it does **not** waive backup requirements. Backups opens a restore catalog with comparison, confirmation, architecture/account checks and a backup of current affected data. Legacy exports remain readable. Services use Service Control Manager for startup changes and restoration.
 
 [Registry safety](docs/en/registry-safety.md) · [User guide](docs/en/user-guide.md) · [Troubleshooting](docs/en/troubleshooting-qa-matrix.md)
 
@@ -79,7 +79,7 @@ Tests use unique temporary files, an isolated HKCU fixture and in-memory setting
 
 **Why did WashinPC skip a file?** It may be busy, changed since scanning, linked, or unsupported by the safe file checks. Read Details; close the owning app and scan again.
 
-**Why are many registry findings diagnostic?** Missing references alone do not prove ownership or safe deletion. Expert mode enables additional inspection, not unchecked repair.
+**Why is a registry checkbox disabled?** A required snapshot could not be captured. All scan categories have repair handlers, including a separate expert-only Windows services category. Expert mode does not bypass revalidation or backups.
 
 **Can I restore cleaned files?** No. The Backups button is for registry/context-menu exports. Do not treat it as file recovery.
 
@@ -93,7 +93,7 @@ Tests use unique temporary files, an isolated HKCU fixture and in-memory setting
 - [x] Background operations, cancellation and RU/EN messages
 - [x] Portable packaging and local fixture/WPF tests
 - [ ] Complete target OS, physical DPI and real startup qualification
-- [ ] Review additional registry categories before enabling repair
+- [x] Category repair handlers, built-in backup restoration and expanded browser privacy groups
 - [ ] Signed releases
 - [ ] Consider a separate privileged executor in a later version
 

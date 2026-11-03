@@ -27,6 +27,15 @@ try {
     $productVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($binary).ProductVersion
     if (!$productVersion.StartsWith($version + '+')) { throw 'Executable version does not match version.json.' }
     Copy-Item -LiteralPath $binary -Destination $stage
+    $runtimeDirectory = Split-Path -Parent $binary
+    Get-ChildItem -LiteralPath $runtimeDirectory -Filter '*.dll' -File | Copy-Item -Destination $stage
+    foreach ($nativeArchitecture in @('x86','x64')) {
+        $nativeDirectory = Join-Path $runtimeDirectory $nativeArchitecture
+        $nativeDll = Join-Path $nativeDirectory 'SQLite.Interop.dll'
+        if (!(Test-Path -LiteralPath $nativeDll)) { throw "Missing SQLite native runtime: $nativeArchitecture" }
+        Copy-Item -LiteralPath $nativeDirectory -Destination $stage -Recurse
+    }
+    if (!(Test-Path -LiteralPath (Join-Path $stage 'System.Data.SQLite.dll'))) { throw 'Missing managed SQLite runtime.' }
     $config = $binary + '.config'
     if (Test-Path $config) { Copy-Item -LiteralPath $config -Destination $stage }
     $assets = Join-Path $repo 'src/bin/Release/net48/Assets'
@@ -36,6 +45,7 @@ try {
     New-Item -ItemType Directory -Force (Join-Path $stage 'licenses') | Out-Null
     Copy-Item -LiteralPath src/Assets/Fonts/Inter/OFL.txt -Destination (Join-Path $stage 'licenses/Inter-OFL.txt')
     Copy-Item -LiteralPath docs/licenses/lucide-ISC.txt -Destination (Join-Path $stage 'licenses/lucide-ISC.txt')
+    Copy-Item -LiteralPath docs/licenses/SQLite.txt -Destination (Join-Path $stage 'licenses/SQLite.txt')
     $out = Join-Path $repo 'artifacts/portable'
     New-Item -ItemType Directory -Force $out | Out-Null
     $zip = Join-Path $out ($name + '.zip')

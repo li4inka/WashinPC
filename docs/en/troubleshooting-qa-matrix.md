@@ -19,6 +19,8 @@ Action: re-run with elevated rights, check endpoint security policies.
 
 ## QA Matrix (Manual)
 
+Backup restoration requires a readable supported backup and an explicit registry view when legacy metadata is missing. Re-run Compare if the object changed. Privacy preserves unsupported database schemas and running-browser databases. The disposable-service mutation integration test requires an elevated Windows process; a sandbox permission override alone does not provide a Windows administrator token.
+
 | Scenario | Win7 x64 | Win8.1 x64 | Win10 x64 | Win11 x64 | Result criteria |
 |---|---|---|---|---|---|
 | Launch + admin check | Pending | Pending | Pending | Pending | Starts cleanly, admin flow works |
@@ -41,4 +43,4 @@ A release candidate is `PASS` only when:
 Otherwise: `FAIL`.
 
 
-Local automated evidence and qualification limits: [validation](../validation/README.md). Backup failure now blocks a change; diagnostics never become fixable solely through expert mode.
+Local automated evidence and qualification limits: [validation](../validation/README.md). Backup failure blocks a change; all scan categories support repair, with snapshot and applicability checks.

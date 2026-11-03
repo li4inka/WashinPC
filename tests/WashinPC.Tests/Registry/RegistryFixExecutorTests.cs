@@ -8,6 +8,39 @@ namespace WashinPC.Tests.Registry
     public class RegistryFixExecutorTests
     {
         [TestMethod]
+        public void MissingObjectsAreSkippedAndSuccessfulWritesAreVerified()
+        {
+            var path = @"Software\WashinPC.Tests-" + System.Guid.NewGuid().ToString("N");
+            try
+            {
+                Assert.AreEqual(RegistryFixResult.Skipped, RegistryMutations.DeleteKey(RegistryHive.CurrentUser, RegistryView.Default, path));
+                Assert.AreEqual(RegistryFixResult.Skipped, RegistryMutations.DeleteValue(RegistryHive.CurrentUser, RegistryView.Default, path, "value"));
+                using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(path)) key.SetValue("value", "original");
+                Assert.AreEqual(RegistryFixResult.Skipped, RegistryMutations.DeleteValue(RegistryHive.CurrentUser, RegistryView.Default, path, "absent"));
+                Assert.AreEqual(RegistryFixResult.Skipped, RegistryMutations.SetValue(RegistryHive.CurrentUser, RegistryView.Default, path, "value", "original", RegistryValueKind.String));
+                Assert.AreEqual(RegistryFixResult.Fixed, RegistryMutations.SetValue(RegistryHive.CurrentUser, RegistryView.Default, path, "value", "updated", RegistryValueKind.String));
+                Assert.AreEqual(RegistryFixResult.Fixed, RegistryMutations.DeleteValue(RegistryHive.CurrentUser, RegistryView.Default, path, "value"));
+                Assert.AreEqual(RegistryFixResult.Skipped, RegistryMutations.DeleteValue(RegistryHive.CurrentUser, RegistryView.Default, path, "value"));
+                Assert.AreEqual(RegistryFixResult.Fixed, RegistryMutations.DeleteKey(RegistryHive.CurrentUser, RegistryView.Default, path));
+                Assert.AreEqual(RegistryFixResult.Skipped, RegistryMutations.DeleteKey(RegistryHive.CurrentUser, RegistryView.Default, path));
+            }
+            finally { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path, false); }
+        }
+
+        [TestMethod]
+        public void ObjectDisappearingInsideWriterIsNotReportedAsFixed()
+        {
+            var path = @"Software\WashinPC.Tests-" + System.Guid.NewGuid().ToString("N");
+            using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(path)) { }
+            try
+            {
+                var result = RegistryFixExecutor.ExecuteLegacyFix(new RegistryFixContext { AllowMutation = true }, RegistryHive.CurrentUser, RegistryView.Default,
+                    path, dry => { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path, true); throw new System.IO.IOException("Gone during write"); }, (h, v, p) => "fixture.reg");
+                Assert.AreEqual(RegistryFixResult.Skipped, result);
+            }
+            finally { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path, false); }
+        }
+        [TestMethod]
         public void ExecuteLegacyFix_ReturnsSkipped_WhenMutationDisabled()
         {
             var ctx = new RegistryFixContext

@@ -12,6 +12,35 @@ namespace WashinPC.Services
         public const string ModeAuto = "auto";
         public const string ModeLight = "light";
         public const string ModeDark = "dark";
+        private static bool _watching;
+        internal static Func<bool> SystemDarkModeReader { get; set; } = IsSystemDarkMode;
+
+        public static void StartWatching()
+        {
+            if (_watching) return;
+            SystemEvents.UserPreferenceChanged += OnSystemPreferenceChanged;
+            _watching = true;
+        }
+
+        public static void StopWatching()
+        {
+            if (!_watching) return;
+            SystemEvents.UserPreferenceChanged -= OnSystemPreferenceChanged;
+            _watching = false;
+        }
+
+        private static void OnSystemPreferenceChanged(object sender, UserPreferenceChangedEventArgs args)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted) return;
+            dispatcher.BeginInvoke(new Action(RefreshSystemTheme));
+        }
+
+        internal static void RefreshSystemTheme()
+        {
+            if (string.Equals(AppSettings.ThemeMode, ModeAuto, StringComparison.OrdinalIgnoreCase))
+                Apply(ModeAuto);
+        }
 
         private static readonly Uri LightDictionary = new Uri("Styles/Theme.Light.xaml", UriKind.Relative);
         private static readonly Uri DarkDictionary = new Uri("Styles/Theme.Dark.xaml", UriKind.Relative);
@@ -52,11 +81,12 @@ namespace WashinPC.Services
             if (string.Equals(mode, ModeDark, StringComparison.OrdinalIgnoreCase))
                 return ModeDark;
 
-            return IsSystemDarkMode() ? ModeDark : ModeLight;
+            return SystemDarkModeReader() ? ModeDark : ModeLight;
         }
 
         public static void ApplyFromSettings()
         {
+            StartWatching();
             Apply(AppSettings.ThemeMode);
         }
 

@@ -133,7 +133,12 @@
                     </Border>
 
                     <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <DataGrid ItemsSource="{Binding Items}"
+                                  IsReadOnly="True"
                                   AutoGenerateColumns="False"
                                   CanUserAddRows="False"
                                   HeadersVisibility="Column"
@@ -150,11 +155,22 @@
 
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Width="46"
+                                                        HeaderStyle="{StaticResource DataGridHeaderCompactCentered}"
                                                         CellStyle="{StaticResource DataGridCellCheckBoxCompact}">
+                                    <DataGridTemplateColumn.Header>
+                                        <CheckBox IsChecked="{Binding DataContext.AllSelectedState, RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEnabled="{Binding DataContext.HasFixableItems, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  ToolTip="{Binding DataContext.SelectAllHint, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  AutomationProperties.Name="{Binding DataContext.SelectAllHint, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  ToolTipService.ShowOnDisabled="True"/>
+                                    </DataGridTemplateColumn.Header>
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <CheckBox HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"
+                                                      ToolTip="{Binding SelectionHint}"
+                                                      AutomationProperties.Name="{Binding KeyPath}"
+                                                      ToolTipService.ShowOnDisabled="True"
                                                       IsEnabled="{Binding CanFix}" IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -196,6 +212,23 @@
                                            FontSize="13"/>
                             </StackPanel>
                         </Border>
+                        <StackPanel Grid.Row="1" Margin="14,10">
+                            <TextBlock Text="{Binding SelectionSummary}"
+                                       Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding SelectionHelp}" Margin="0,6,0,0"
+                                       Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasDiagnosticItems}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </Border>

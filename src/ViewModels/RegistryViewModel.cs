@@ -2,6 +2,8 @@ using WashinPC.Engines.Operations;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -42,6 +44,7 @@ namespace WashinPC.ViewModels
         public string Category => Model.Category;
         public string KeyPath => Model.KeyPath;
         public string Details => Model.Details;
+        public string SelectionHint => CanFix ? Localizer.T("registry.selection.fixable") : Localizer.T("op.diagnostic");
 
 
         public void RefreshText()
@@ -49,6 +52,7 @@ namespace WashinPC.ViewModels
             Model.RefreshText();
             OnPropertyChanged(nameof(Category));
             OnPropertyChanged(nameof(Details));
+            OnPropertyChanged(nameof(SelectionHint));
         }
     }
 
@@ -74,25 +78,32 @@ namespace WashinPC.ViewModels
             }
         }
 
-        /// <summary>
-        /// Три-состояния для "выделить всё" в шапке таблицы.
-        /// </summary>
-        private bool? _allSelectedState = true;
+        private readonly HashSet<RegistryIssueView> _observedItems = new HashSet<RegistryIssueView>();
+        private bool _updatingSelection;
+        public bool HasFixableItems => Items.Any(x => x.CanFix);
+        public bool HasDiagnosticItems => Items.Any(x => !x.CanFix);
+        public string SelectionSummary => Localizer.T("registry.selection.summary",
+            Items.Count(x => x.IsSelected && x.CanFix), Items.Count(x => x.CanFix), Items.Count(x => !x.CanFix));
+        public string SelectionHelp => Localizer.T("registry.selection.help");
+        public string SelectAllHint => Localizer.T("registry.selection.all");
+
+        private bool? _allSelectedState = false;
+        /// <summary>Tracks all, none, or a partial selection of repairable results.</summary>
         public bool? AllSelectedState
         {
             get => _allSelectedState;
             set
             {
                 if (_allSelectedState == value) return;
-                _allSelectedState = value;
-                OnPropertyChanged();
-
                 if (value == null) return;
-
-                foreach (var it in Items)
-                    it.IsSelected = value.Value;
-
-                UpdateAllSelectedState();
+                _updatingSelection = true;
+                try
+                {
+                    foreach (var it in Items.Where(x => x.CanFix))
+                        it.IsSelected = value.Value;
+                }
+                finally { _updatingSelection = false; }
+                RefreshSelection();
             }
         }
 
@@ -103,6 +114,23 @@ namespace WashinPC.ViewModels
         {
             ScanCommand = new RelayCommand(async () => await ScanAsync(), () => CanStart);
             FixCommand = new RelayCommand(async () => await FixAsync(), () => CanStart && Items.Any(x => x.IsSelected && x.CanFix));
+
+            Items.CollectionChanged += (sender, args) =>
+            {
+                if (args.Action == NotifyCollectionChangedAction.Reset)
+                {
+                    foreach (var item in _observedItems)
+                        item.PropertyChanged -= OnItemPropertyChanged;
+                    _observedItems.Clear();
+                }
+                if (args.OldItems != null)
+                    foreach (RegistryIssueView item in args.OldItems)
+                        if (_observedItems.Remove(item)) item.PropertyChanged -= OnItemPropertyChanged;
+                if (args.NewItems != null)
+                    foreach (RegistryIssueView item in args.NewItems)
+                        if (_observedItems.Add(item)) item.PropertyChanged += OnItemPropertyChanged;
+                RefreshSelection();
+            };
 
             BuildCategories();
             AppSettings.SettingChanged += OnSettingChanged;
@@ -120,6 +148,9 @@ namespace WashinPC.ViewModels
                     it.RefreshText();
 
                 UpdateSummary();
+                OnPropertyChanged(nameof(SelectionSummary));
+                OnPropertyChanged(nameof(SelectionHelp));
+                OnPropertyChanged(nameof(SelectAllHint));
             };
 
             UpdateSummary();
@@ -147,6 +178,7 @@ namespace WashinPC.ViewModels
             Add("registry.cat.mui_cache", RegistryRiskLevel.Dangerous, false, expertMode);
             Add("registry.cat.start_menu", RegistryRiskLevel.Dangerous, false, expertMode);
             Add("registry.cat.sound_events", RegistryRiskLevel.Dangerous, false, expertMode);
+            Add("registry.cat.services", RegistryRiskLevel.Dangerous, false, expertMode);
 
             // если у тебя есть ещё категории как в CCleaner — добавляй сюда по этому же принципу.
         }
@@ -180,7 +212,6 @@ namespace WashinPC.ViewModels
                 foreach (var issue in found)
                 {
                     var item = new RegistryIssueView(issue);
-                    item.PropertyChanged += (sender, args) => { if (args.PropertyName == nameof(RegistryIssueView.IsSelected)) { UpdateAllSelectedState(); (FixCommand as RelayCommand)?.RaiseCanExecuteChanged(); } };
                     Items.Add(item);
                 }
                 UpdateAllSelectedState(); UpdateSummary(); SetStatus(() => Localizer.T("summary.registry", Items.Count));
@@ -223,6 +254,21 @@ namespace WashinPC.ViewModels
         protected override void OnBusyChanged()
         {
             (ScanCommand as RelayCommand)?.RaiseCanExecuteChanged(); (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void OnItemPropertyChanged(object sender, PropertyChangedEventArgs args)
+        {
+            if (args.PropertyName == nameof(RegistryIssueView.IsSelected) && !_updatingSelection)
+                RefreshSelection();
+        }
+
+        private void RefreshSelection()
+        {
+            UpdateAllSelectedState();
+            OnPropertyChanged(nameof(HasFixableItems));
+            OnPropertyChanged(nameof(HasDiagnosticItems));
+            OnPropertyChanged(nameof(SelectionSummary));
+            (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void UpdateAllSelectedState()

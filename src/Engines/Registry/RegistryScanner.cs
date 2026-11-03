@@ -88,8 +88,7 @@ namespace WashinPC.Engines.Registry
             if (selected == null || selected.Contains("registry.cat.mui_cache")) ScanMuiCache();
             token.ThrowIfCancellationRequested();
             if (selected == null || selected.Contains("registry.cat.sound_events")) ScanSoundEvents();
-            // ScanWindowsServices() intentionally excluded by default
-            // to keep behavior conservative across Win7-Win11.
+            if (selected != null && selected.Contains("registry.cat.services")) ScanWindowsServices();
 
             return _issues.AsReadOnly();
         }
@@ -151,28 +150,41 @@ namespace WashinPC.Engines.Registry
             string valueName,
             string detailsKey,
             object[] detailsArgs,
-            Func<bool, RegistryFixResult> legacyFix)
+            Func<bool, RegistryFixResult> legacyFix,
+            string mutationKeyPath = null,
+            Func<bool> isStillApplicable = null)
         {
-            var canFix = categoryKey == "registry.cat.shared_dlls" || categoryKey == "registry.cat.help_files";
-            var subKey = RegistryFixExecutor.ExtractSubKeyPath(hive, keyPathUi);
+            var canFix = legacyFix != null;
+            var backupPath = mutationKeyPath ?? keyPathUi;
+            var subKey = RegistryFixExecutor.ExtractSubKeyPath(hive, backupPath);
+            var valueRepair = categoryKey == "registry.cat.shared_dlls" || categoryKey == "registry.cat.help_files" ||
+                categoryKey == "registry.cat.fonts" || categoryKey == "registry.cat.installer_refs" ||
+                categoryKey == "registry.cat.obsolete_software" || categoryKey == "registry.cat.mui_cache" ||
+                categoryKey == "registry.cat.sound_events" ||
+                (categoryKey == "registry.cat.startup" && detailsKey == "registry.details.startup_missing");
+            Func<string> capture = () => valueRepair
+                ? RegistryBackup.CaptureValues(hive, view, subKey, categoryKey == "registry.cat.obsolete_software"
+                    ? new[] { "InstallLocation", "DisplayIcon" }
+                    : new[] { valueName == "(Default)" ? "" : valueName })
+                : RegistryBackup.Capture(hive, view, subKey);
             string snapshot = null;
-            if (canFix) { try { snapshot = RegistryBackup.Capture(hive, view, subKey); } catch { canFix = false; } }
+            if (canFix)
+            {
+                try { snapshot = capture(); canFix = snapshot != null; }
+                catch { canFix = false; }
+            }
             Func<bool> validate = () =>
             {
-                if (!canFix || detailsArgs == null || detailsArgs.Length != 1 || !FileMissing(detailsArgs[0] as string)) return false;
-                try { return snapshot == RegistryBackup.Capture(hive, view, subKey); } catch { return false; }
-            };
-            Func<bool, RegistryFixResult> guardedValueFix = dryRun =>
-            {
-                // Only the two supported value repairs reach this path; never delete a key here.
-                using (var root = OpenBase(hive, view))
-                using (var key = root.OpenSubKey(subKey, !dryRun))
+                if (!canFix) return false;
+                try
                 {
-                    if (key == null || !key.GetValueNames().Contains(valueName, StringComparer.OrdinalIgnoreCase) || !validate())
-                        return RegistryFixResult.Skipped;
-                    if (!dryRun) key.DeleteValue(valueName, true);
-                    return RegistryFixResult.Fixed;
+                    if (snapshot != capture()) return false;
+                    if (isStillApplicable != null) return isStillApplicable();
+                    // These findings depend only on registry contents covered by the snapshot.
+                    if (categoryKey == "registry.cat.unused_file_ext" || categoryKey == "registry.cat.start_menu") return true;
+                    return detailsArgs != null && detailsArgs.Length == 1 && FileMissing(detailsArgs[0] as string);
                 }
+                catch { return false; }
             };
             var issue = new RegistryIssue
             {
@@ -185,7 +197,7 @@ namespace WashinPC.Engines.Registry
                 View = view,
                 KeyPath = keyPathUi,
                 ValueName = valueName,
-                Fix = ctx => canFix ? RegistryFixExecutor.ExecuteLegacyFix(ctx, hive, view, keyPathUi, guardedValueFix, revalidate: validate) : RegistryFixResult.Skipped
+                Fix = ctx => canFix ? RegistryFixExecutor.ExecuteLegacyFix(ctx, hive, view, backupPath, legacyFix, revalidate: validate) : RegistryFixResult.Skipped
             };
 
             issue.RefreshText();
@@ -242,20 +254,7 @@ namespace WashinPC.Engines.Registry
                                     "(Default)",
                                     "registry.details.path_missing",
                                     new object[] { exe },
-                                    dryRun =>
-                                    {
-                                        try
-                                        {
-                                            if (!dryRun)
-                                            {
-                                                using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                                using (var w = wbase.OpenSubKey(sub, true))
-                                                    w?.DeleteSubKeyTree(sk, false);
-                                            }
-                                            return RegistryFixResult.Fixed;
-                                        }
-                                        catch { return RegistryFixResult.Failed; }
-                                    });
+                                    dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteKey(RegistryHive.LocalMachine, view, $@"{sub}\{sk}"));
                             }
                         }
                     }
@@ -318,20 +317,7 @@ namespace WashinPC.Engines.Registry
                                         "UninstallString",
                                         "registry.details.uninstall_missing",
                                         new object[] { exe },
-                                        dryRun =>
-                                        {
-                                            try
-                                            {
-                                                if (!dryRun)
-                                                {
-                                                    using (var wbase = OpenBase(hive, view))
-                                                    using (var w = wbase.OpenSubKey(sub, true))
-                                                        w?.DeleteSubKeyTree(sk, false);
-                                                }
-                                                return RegistryFixResult.Fixed;
-                                            }
-                                            catch { return RegistryFixResult.Failed; }
-                                        });
+                                        dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteKey(hive, view, $@"{sub}\{sk}"));
                                 }
                             }
                         }
@@ -381,20 +367,7 @@ namespace WashinPC.Engines.Registry
                                 valueName,
                                 "registry.details.file_missing",
                                 new object[] { path },
-                                dryRun =>
-                                {
-                                    try
-                                    {
-                                        if (!dryRun)
-                                        {
-                                            using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                            using (var w = wbase.OpenSubKey(sub, true))
-                                                w?.DeleteValue(valueName, false);
-                                        }
-                                        return RegistryFixResult.Fixed;
-                                    }
-                                    catch { return RegistryFixResult.Failed; }
-                                });
+                                dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValue(RegistryHive.LocalMachine, view, sub, valueName));
                         }
                     }
                 }
@@ -457,19 +430,7 @@ namespace WashinPC.Engines.Registry
                                     "(Default)",
                                     "registry.details.unused_extension",
                                     new object[] { name },
-                                    dryRun =>
-                                    {
-                                        try
-                                        {
-                                            if (!dryRun)
-                                            {
-                                                using (var wbase = OpenBase(RegistryHive.ClassesRoot, view))
-                                                    wbase.DeleteSubKeyTree(name, false);
-                                            }
-                                            return RegistryFixResult.Fixed;
-                                        }
-                                        catch { return RegistryFixResult.Failed; }
-                                    });
+                                    dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteKey(RegistryHive.ClassesRoot, view, name));
                             }
                         }
                     }
@@ -528,37 +489,7 @@ namespace WashinPC.Engines.Registry
                                                 "InprocServer32",
                                                 "registry.details.com_server_missing",
                                                 new object[] { server },
-                                                dryRun =>
-                                                {
-                                                    try
-                                                    {
-                                                        if (!dryRun)
-                                                        {
-                                                            using (var wbase = OpenBase(RegistryHive.ClassesRoot, view))
-                                                            using (var wroot = wbase.OpenSubKey(sub, true))
-                                                            using (var wclsid = wroot?.OpenSubKey(guid))
-                                                            {
-                                                                if (wclsid == null) return RegistryFixResult.Failed;
-
-                                                                var subkeys = wclsid.GetSubKeyNames();
-                                                                // допускаем только InprocServer32 (и больше ничего)
-                                                                if (subkeys.Length == 1 && subkeys[0].Equals("InprocServer32", StringComparison.OrdinalIgnoreCase))
-                                                                {
-                                                                    wroot.DeleteSubKeyTree(guid, false);
-                                                                    return RegistryFixResult.Fixed;
-                                                                }
-
-                                                                // иначе: удаляем только InprocServer32 (без каскада)
-                                                                using (var wip = wclsid.OpenSubKey("InprocServer32", true))
-                                                                {
-                                                                    wip?.SetValue(null, "", RegistryValueKind.String);
-                                                                }
-                                                            }
-                                                        }
-                                                        return RegistryFixResult.Fixed;
-                                                    }
-                                                    catch { return RegistryFixResult.Failed; }
-                                                });
+                                                dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.RepairCom(view, $@"{sub}\{guid}"));
                                         }
                                     }
                                 }
@@ -621,23 +552,7 @@ namespace WashinPC.Engines.Registry
                                             "(Default)",
                                             "registry.details.typelib_missing",
                                             new object[] { p },
-                                            dryRun =>
-                                            {
-                                                try
-                                                {
-                                                    if (!dryRun)
-                                                    {
-                                                        using (var wbase = OpenBase(RegistryHive.ClassesRoot, view))
-                                                        using (var wroot = wbase.OpenSubKey(sub, true))
-                                                        {
-                                                            // удаляем только конкретную версию, не весь GUID
-                                                            wroot?.DeleteSubKeyTree($@"{guid}\{ver}", false);
-                                                        }
-                                                    }
-                                                    return RegistryFixResult.Fixed;
-                                                }
-                                                catch { return RegistryFixResult.Failed; }
-                                            });
+                                            dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteKey(RegistryHive.ClassesRoot, view, $@"{sub}\{guid}\{ver}"), mutationKeyPath: $@"HKCR\TypeLib\{guid}\{ver}");
                                     }
                                 }
                             }
@@ -695,20 +610,7 @@ namespace WashinPC.Engines.Registry
                                     "(Default)",
                                     "registry.details.app_command_missing",
                                     new object[] { exe },
-                                    dryRun =>
-                                    {
-                                        try
-                                        {
-                                            if (!dryRun)
-                                            {
-                                                using (var wbase = OpenBase(RegistryHive.ClassesRoot, view))
-                                                using (var wroot = wbase.OpenSubKey(sub, true))
-                                                    wroot?.DeleteSubKeyTree(appExe, false);
-                                            }
-                                            return RegistryFixResult.Fixed;
-                                        }
-                                        catch { return RegistryFixResult.Failed; }
-                                    });
+                                    dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteKey(RegistryHive.ClassesRoot, view, $@"{sub}\{appExe}"), mutationKeyPath: $@"HKCR\Applications\{appExe}");
                             }
                         }
                     }
@@ -766,20 +668,7 @@ namespace WashinPC.Engines.Registry
                                 valueName,
                                 "registry.details.font_missing",
                                 new object[] { full },
-                                dryRun =>
-                                {
-                                    try
-                                    {
-                                        if (!dryRun)
-                                        {
-                                            using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                            using (var w = wbase.OpenSubKey(sub, true))
-                                                w?.DeleteValue(valueName, false);
-                                        }
-                                        return RegistryFixResult.Fixed;
-                                    }
-                                    catch { return RegistryFixResult.Failed; }
-                                });
+                                dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValue(RegistryHive.LocalMachine, view, sub, valueName));
                         }
                     }
                 }
@@ -836,20 +725,7 @@ namespace WashinPC.Engines.Registry
                                         "HelpFile",
                                         "registry.details.help_missing",
                                         new object[] { helpFile },
-                                        dryRun =>
-                                        {
-                                            try
-                                            {
-                                                if (!dryRun)
-                                                {
-                                                    using (var wbase = OpenBase(hive, view))
-                                                    using (var w = wbase.OpenSubKey($@"{sub}\{sk}", true))
-                                                        w?.DeleteValue("HelpFile", false);
-                                                }
-                                                return RegistryFixResult.Fixed;
-                                            }
-                                            catch { return RegistryFixResult.Failed; }
-                                        });
+                                        dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValue(hive, view, $@"{sub}\{sk}", "HelpFile"));
                                 }
                             }
                         }
@@ -913,21 +789,7 @@ namespace WashinPC.Engines.Registry
                                             "LocalPackage",
                                             "registry.details.installer_package_missing",
                                             new object[] { localPackage },
-                                            dryRun =>
-                                            {
-                                                // Fix: удаляем только LocalPackage value (не сносим продукт целиком)
-                                                try
-                                                {
-                                                    if (!dryRun)
-                                                    {
-                                                        using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                                        using (var wip = wbase.OpenSubKey(ipPath, true))
-                                                            wip?.DeleteValue("LocalPackage", false);
-                                                    }
-                                                    return RegistryFixResult.Fixed;
-                                                }
-                                                catch { return RegistryFixResult.Failed; }
-                                            });
+                                            dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValue(RegistryHive.LocalMachine, view, ipPath, "LocalPackage"));
                                     }
                                 }
                             }
@@ -994,24 +856,9 @@ namespace WashinPC.Engines.Registry
                                         badLocation ? "InstallLocation" : "DisplayIcon",
                                         "registry.details.obsolete_reference",
                                         new object[] { badLocation ? installLocation : displayIcon },
-                                        dryRun =>
-                                        {
-                                            try
-                                            {
-                                                if (!dryRun)
-                                                {
-                                                    using (var wbase = OpenBase(hive, view))
-                                                    using (var w = wbase.OpenSubKey($@"{sub}\{sk}", true))
-                                                    {
-                                                        if (w == null) return RegistryFixResult.Failed;
-                                                        if (badLocation) w.DeleteValue("InstallLocation", false);
-                                                        if (badIcon) w.DeleteValue("DisplayIcon", false);
-                                                    }
-                                                }
-                                                return RegistryFixResult.Fixed;
-                                            }
-                                            catch { return RegistryFixResult.Failed; }
-                                        });
+                                        dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValues(hive, view, $@"{sub}\{sk}", new[] { badLocation ? "InstallLocation" : null, badIcon ? "DisplayIcon" : null }), isStillApplicable: () =>
+                                            (!badLocation || DirMissing(installLocation)) &&
+                                            (!badIcon || FileMissing(FirstTokenAsPath(displayIcon))));
                                 }
                             }
                         }
@@ -1072,20 +919,7 @@ namespace WashinPC.Engines.Registry
                                     valueName,
                                     "registry.details.startup_missing",
                                     new object[] { exe },
-                                    dryRun =>
-                                    {
-                                        try
-                                        {
-                                            if (!dryRun)
-                                            {
-                                                using (var wbase = OpenBase(rk.Hive, view))
-                                                using (var w = wbase.OpenSubKey(rk.Sub, true))
-                                                    w?.DeleteValue(valueName, false);
-                                            }
-                                            return RegistryFixResult.Fixed;
-                                        }
-                                        catch { return RegistryFixResult.Failed; }
-                                    });
+                                    dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValue(rk.Hive, view, rk.Sub, valueName));
                             }
                         }
                     }
@@ -1147,19 +981,7 @@ namespace WashinPC.Engines.Registry
                             "",
                             "registry.details.menuorder_reset",
                             new object[] { },
-                            dryRun =>
-                            {
-                                try
-                                {
-                                    if (!dryRun)
-                                    {
-                                        using (var wbase = OpenBase(RegistryHive.CurrentUser, view))
-                                            wbase.DeleteSubKeyTree(sub, false);
-                                    }
-                                    return RegistryFixResult.Fixed;
-                                }
-                                catch { return RegistryFixResult.Failed; }
-                            });
+                            dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteKey(RegistryHive.CurrentUser, view, sub));
                     }
                 }
                 catch (OperationCanceledException) { throw; }
@@ -1206,20 +1028,7 @@ namespace WashinPC.Engines.Registry
                                 valueName,
                                 "registry.details.muicache_missing",
                                 new object[] { p },
-                                dryRun =>
-                                {
-                                    try
-                                    {
-                                        if (!dryRun)
-                                        {
-                                            using (var wbase = OpenBase(RegistryHive.CurrentUser, view))
-                                            using (var w = wbase.OpenSubKey(sub, true))
-                                                w?.DeleteValue(valueName, false);
-                                        }
-                                        return RegistryFixResult.Fixed;
-                                    }
-                                    catch { return RegistryFixResult.Failed; }
-                                });
+                                dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.DeleteValue(RegistryHive.CurrentUser, view, sub, valueName));
                         }
                     }
                 }
@@ -1278,20 +1087,7 @@ namespace WashinPC.Engines.Registry
                                             "(Default)",
                                             "registry.details.sound_missing",
                                             new object[] { wav },
-                                            dryRun =>
-                                            {
-                                                try
-                                                {
-                                                    if (!dryRun)
-                                                    {
-                                                        using (var wbase = OpenBase(RegistryHive.CurrentUser, view))
-                                                        using (var w = wbase.OpenSubKey(curPath, true))
-                                                            w?.SetValue(null, "", RegistryValueKind.String);
-                                                    }
-                                                    return RegistryFixResult.Fixed;
-                                                }
-                                                catch { return RegistryFixResult.Failed; }
-                                            });
+                                            dryRun => dryRun ? RegistryFixResult.Skipped : RegistryMutations.SetValue(RegistryHive.CurrentUser, view, curPath, "", "", RegistryValueKind.String));
                                     }
                                 }
                             }
@@ -1310,82 +1106,10 @@ namespace WashinPC.Engines.Registry
         // 15) Windows Services (в рамках 15 категорий — включаем вместо лишней)
         // ============================================================
 
+        internal IServiceManager ServiceManager { get; set; } = new WindowsServiceManager();
         private void ScanWindowsServices()
         {
-            // Для безопасности:
-            // - НЕ удаляем сервис
-            // - Фикс: если ImagePath указывает на отсутствующий exe/dll, ставим Start=4 (Disabled)
-            // Это обратимо и минимально разрушительно.
-            const string sub = @"SYSTEM\CurrentControlSet\Services";
-
-            foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-            {
-                            _token.ThrowIfCancellationRequested();
-                try
-                {
-                    using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
-                    using (var root = baseKey.OpenSubKey(sub))
-                    {
-                        if (root == null) continue;
-
-                        foreach (var svc in root.GetSubKeyNames())
-                        {
-                            _token.ThrowIfCancellationRequested();
-                            using (var sk = root.OpenSubKey(svc))
-                            {
-                                if (sk == null) continue;
-
-                                var imagePath = sk.GetValue("ImagePath") as string;
-                                if (string.IsNullOrWhiteSpace(imagePath))
-                                    continue;
-
-                                // svchost.exe — системный хост, не трогаем
-                                var exe = FirstTokenAsPath(imagePath);
-                                if (string.IsNullOrWhiteSpace(exe)) continue;
-
-                                exe = ExpandEnv(exe);
-
-                                if (!Path.IsPathRooted(exe))
-                                    continue;
-
-                                if (!FileMissing(exe))
-                                    continue;
-
-                                AddIssue(
-                                    "registry.cat.startup",
-                                    RegistryHive.LocalMachine,
-                                    view,
-                                    $@"HKLM\{sub}\{svc}",
-                                    "ImagePath",
-                                    "registry.details.service_image_missing",
-                                    new object[] { exe },
-                                    dryRun =>
-                                    {
-                                        try
-                                        {
-                                            if (!dryRun)
-                                            {
-                                                using (var wbase = OpenBase(RegistryHive.LocalMachine, view))
-                                                using (var w = wbase.OpenSubKey($@"{sub}\{svc}", true))
-                                                {
-                                                    if (w == null) return RegistryFixResult.Failed;
-                                                    w.SetValue("Start", 4, RegistryValueKind.DWord); // Disabled
-                                                }
-                                            }
-                                            return RegistryFixResult.Fixed;
-                                        }
-                                        catch { return RegistryFixResult.Failed; }
-                                    });
-                            }
-                        }
-                    }
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    LogScanSectionFailure("ScanWindowsServices", ex, view: view);
-                }
-            }
+            _issues.AddRange(ServiceRepairs.Scan(ServiceManager, _token));
         }
     }
 }

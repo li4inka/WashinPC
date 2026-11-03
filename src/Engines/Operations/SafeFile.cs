@@ -91,14 +91,14 @@ namespace WashinPC.Engines.Operations
         private SafeFileHandle _handle;
         internal string Fingerprint { get; private set; }
         internal long Length { get; private set; }
-        internal static SafeFile Open(string path, string root, bool deletion)
+        internal static SafeFile Open(string path, string root, bool deletion, bool allowWrites = false)
         {
             if (!PathSafety.Under(path, root)) throw new IOException("Outside allowed root.");
             PathSafety.NoLinks(path);
             var result = new SafeFile();
             try
             {
-                result._handle = CreateFile(path, 0x80000000u | (deletion ? 0x10000u : 0), 1, IntPtr.Zero, 3, 0x00200000, IntPtr.Zero);
+                result._handle = CreateFile(path, 0x80000000u | (deletion ? 0x10000u : 0), allowWrites ? 3u : 1u, IntPtr.Zero, 3, 0x00200000, IntPtr.Zero);
                 if (result._handle.IsInvalid) throw new Win32Exception();
                 FileInfoNative info;
                 if (!GetFileInformationByHandle(result._handle, out info)) throw new Win32Exception();

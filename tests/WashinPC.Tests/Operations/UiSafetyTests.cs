@@ -144,6 +144,7 @@ namespace WashinPC.Tests.Operations
                     Assert.AreSame(cleaner, ((FrameworkElement)host.Content).DataContext);
                     Assert.IsTrue(row.IsChecked); Assert.IsTrue(cleaner.CleanCommand.CanExecute(null));
                     Assert.IsFalse(AppUiState.Instance.IsBusy);
+                    RenderNewViews(host);
                     if (Environment.GetEnvironmentVariable("WASHINPC_CAPTURE_PREVIEW") == "1") Capture(window, cleaner);
                     window.Close(); app.Shutdown();
                 }
@@ -153,6 +154,63 @@ namespace WashinPC.Tests.Operations
             Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "WPF test timed out.");
             if (failure != null) throw new AssertFailedException("WPF render failed", failure);
         }
+        private static void RenderNewViews(ContentControl host)
+        {
+            var root = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", ".."));
+            var directory = Path.Combine(root, "artifacts", "ui-qa"); Directory.CreateDirectory(directory);
+            var backups = new WashinPC.Views.Dialogs.BackupsWindow();
+            var vm = (BackupsViewModel)backups.DataContext;
+            try
+            {
+                foreach (var theme in new[] { ThemeService.ModeLight, ThemeService.ModeDark })
+                foreach (var language in new[] { Lang.RU, Lang.EN })
+                {
+                    ThemeService.Apply(theme); Localizer.Current = language;
+                    vm.Entries.Clear();
+                    vm.Entries.Add(new WashinPC.Engines.Registry.BackupEntry { FilePath = "fixture.reg", Date = DateTime.Now,
+                        Targets = @"HKEY_CURRENT_USER\Software\WashinPC.Tests-fixture", View = Microsoft.Win32.RegistryView.Registry64 });
+                    vm.Differences.Clear(); vm.Differences.Add(new WashinPC.Engines.Registry.RestoreDifference { Object = @"Software\WashinPC.Tests-fixture :: value", Before = "Current fixture", After = "Saved fixture" });
+                    foreach (var size in new[] { new Size(1000, 680), new Size(700, 480) })
+                    {
+                        SaveRender((FrameworkElement)backups.Content, size, Path.Combine(directory, "backups-" + theme + "-" + language + "-" + size.Width + ".png"));
+                        Assert.IsTrue(VisualTexts((FrameworkElement)backups.Content).Contains(vm.DateLabel), "Backup column headers must be localized and bound.");
+                    }
+                    foreach (var page in new[] { PageType.Privacy, PageType.Registry, PageType.Settings })
+                    {
+                        NavigationService.Navigate(page);
+                        var content = (FrameworkElement)host.Content;
+                        if (page == PageType.Privacy)
+                        {
+                            var privacy = (PrivacyViewModel)content.DataContext;
+                            privacy.Items.Clear();
+                            foreach (var browser in new[] { "chrome", "edge", "firefox", "opera", "opera_gx", "brave", "yandex" })
+                            foreach (var category in new[] { "history", "cookies", "cache" })
+                                privacy.Items.Add(new SizeItemViewModel { Title = new LocalizedString("privacy." + browser + "." + category), IsDatabase = category != "cache", Records = 42, TotalBytes = 4096 });
+                        }
+                        SaveRender(content, new Size(980, 600), Path.Combine(directory, page + "-" + theme + "-" + language + ".png"));
+                    }
+                }
+            }
+            finally { backups.Close(); ThemeService.Apply(ThemeService.ModeLight); }
+        }
+
+        private static System.Collections.Generic.IEnumerable<string> VisualTexts(DependencyObject root)
+        {
+            if (root is TextBlock text) yield return text.Text;
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+                foreach (var value in VisualTexts(VisualTreeHelper.GetChild(root, i))) yield return value;
+        }
+
+        private static void SaveRender(FrameworkElement visual, Size size, string path)
+        {
+            visual.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "Brush.Text");
+            if (visual is Panel panel) panel.SetResourceReference(Panel.BackgroundProperty, "Brush.WindowBg");
+            visual.Measure(size); visual.Arrange(new Rect(size)); visual.UpdateLayout(); Pump(); visual.UpdateLayout();
+            var bitmap = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using (var file = File.Create(path)) encoder.Save(file);
+        }
+
         private static void Capture(MainWindow window, CleanerViewModel cleaner)
         {
             var root = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", ".."));

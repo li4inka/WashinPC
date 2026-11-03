@@ -92,7 +92,7 @@ namespace WashinPC.Tests.Operations
         {
             var profile = Path.Combine(root, "Profile 2"); Directory.CreateDirectory(profile);
             System.IO.File.WriteAllText(Path.Combine(profile, "Preferences"), "{}");
-            var history = Path.Combine(profile, "History"); System.IO.File.WriteAllText(history, "SQLite format 3\0fixture");
+            var history = Path.Combine(profile, "History"); WashinPC.Tests.Privacy.BrowserFixtures.ChromiumHistory(history);
             var plan = new FileScanPlan(); PrivacyEngine.ScanBrowser(plan, root, "chrome", CancellationToken.None, running: p => false);
             Assert.AreEqual(1, plan.Files.Count); Assert.AreEqual("privacy.chrome.history", plan.Files[0].Group);
             System.IO.File.WriteAllText(history + "-wal", "recovery");

@@ -1,8 +1,20 @@
 # Local validation — 2026-11-03
 
-This is development-host evidence for **1.2.0-preview.1**, not full Windows qualification. No cleanup of installed applications or user files was performed.
+This is development-host evidence for **1.2.0-preview.2**, not full Windows qualification. No cleanup of installed applications or user files was performed.
 
-## Functional coverage
+## Current feature validation
+
+The current suite has 73 cases: 72 pass and one service-mutation integration case is inconclusive on this host because `sc.exe create` returns access denied. The process can read real service configuration through Service Control Manager; disable/restore, stale state, backup failure and cancellation are tested through an injected service adapter. No installed service was changed. An elevated disposable-service test is included and must pass during Windows qualification.
+
+Текущие изменения: 73 проверки, из них 72 успешны и одна проверка реального изменения тестовой службы пропущена из-за отказа Windows в создании службы. Чтение конфигурации через Windows API и логика отключения/восстановления через тестовый адаптер проверены. Проверки браузеров используют искусственные базы, а отрисовка выполняется без видимого окна. Реальные профили браузеров, повышенные права для изменения службы и полный набор целевых ОС требуют отдельной квалификации.
+
+Added coverage includes typed registry restoration, missing keys/values, undo backups, legacy view selection, corruption, stale previews, cancellation and partial write failures; all six Chromium-family profile variants plus Firefox, separated categories, bookmark/credential/session/download preservation, unknown schemas and SQLite rollback; and System theme persistence/manual override. Browser tests use synthetic SQLite databases, not personal browser profiles. These tests do not qualify every live browser schema/version.
+
+The WPF fixture renders the backup catalog at 1000x680 and 700x480, and Privacy/Registry/Settings in RU/EN and light/dark themes. Inspectable PNGs are generated in `artifacts/ui-qa`. This is headless layout and visual inspection, not a physical-DPI or accessibility certification.
+
+Packaging includes the managed SQLite provider and both native architectures. Per-architecture TRX results are retained under `artifacts/test-results/x64` and `x86`. Archives and SHA-256 companions remain under `artifacts/portable`. Complete OS/VM, live-browser and elevated service qualification is still pending.
+
+## Historical functional coverage
 
 39 fixture/UI tests cover existing behavior plus retained selections, changed files, busy files, partial success and cancellation/retry; ancestor rename exclusion; hardlinks and named streams; browser profiles and SQLite sidecars; mandatory backup failure; stale registry snapshots; typed `.reg` export and native Windows import into an isolated fixture; context-menu disable/enable; shared operation ownership; RU/EN messages; and headless rendering of all five pages at 1280×720 and 900×560.
 

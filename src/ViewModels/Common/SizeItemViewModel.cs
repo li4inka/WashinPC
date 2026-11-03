@@ -12,8 +12,9 @@ namespace WashinPC.ViewModels.Common
 
         public string Name => Title?.Value ?? string.Empty;
 
-        public string SizeText =>
-            Core.Utils.FileSizeFormatter.Format(_totalBytes);
+        public long Records { get; set; }
+        public bool IsDatabase { get; set; }
+        public string SizeText => IsDatabase ? Localizer.T("privacy.records", Records) : Core.Utils.FileSizeFormatter.Format(_totalBytes);
 
         public bool IsChecked
         {
@@ -44,6 +45,7 @@ namespace WashinPC.ViewModels.Common
                 Title.Refresh();
 
             OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(SizeText));
         }
     }
 }

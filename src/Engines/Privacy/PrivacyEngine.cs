@@ -15,19 +15,19 @@ namespace WashinPC.Engines.Privacy
         public List<string> Files = new List<string>();
         public long TotalBytes;
     }
-    public sealed class PrivacyEngine
+    public sealed partial class PrivacyEngine
     {
         internal FileScanPlan LastPlan { get; private set; } = new FileScanPlan();
         internal static bool DatabaseAvailable(string path, string process, Func<string, bool> running = null)
         {
             try
             {
-                if (running != null ? running(process) : IsRunning(process)) return false;
+                if (running != null ? running(process) : BrowserRunning(process)) return false;
                 return new[] { "-wal", "-shm", "-journal" }.All(s => PathSafety.Probe(path + s) == PathState.Missing);
             }
             catch { return false; }
         }
-        private static bool IsRunning(string name)
+        internal static bool BrowserRunning(string name)
         {
             var processes = Process.GetProcessesByName(name);
             try { return processes.Length != 0; }
@@ -37,47 +37,46 @@ namespace WashinPC.Engines.Privacy
         {
             var plan = new FileScanPlan();
             var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             ScanBrowser(plan, Path.Combine(local, @"Google\Chrome\User Data"), "chrome", token, progress);
             ScanBrowser(plan, Path.Combine(local, @"Microsoft\Edge\User Data"), "msedge", token, progress);
+            ScanBrowser(plan, Path.Combine(local, @"BraveSoftware\Brave-Browser\User Data"), "brave", token, progress, browserId: "brave");
+            ScanBrowser(plan, Path.Combine(local, @"Yandex\YandexBrowser\User Data"), "browser", token, progress, browserId: "yandex");
+            ScanBrowser(plan, Path.Combine(roaming, @"Opera Software\Opera Stable"), "opera", token, progress, browserId: "opera", cacheRoot: Path.Combine(local, @"Opera Software\Opera Stable"));
+            ScanBrowser(plan, Path.Combine(roaming, @"Opera Software\Opera GX Stable"), "opera", token, progress, browserId: "opera_gx", cacheRoot: Path.Combine(local, @"Opera Software\Opera GX Stable"));
+            ScanFirefox(plan, Path.Combine(roaming, @"Mozilla\Firefox"), Path.Combine(local, @"Mozilla\Firefox"), token, progress);
             plan.Cancelled = token.IsCancellationRequested; LastPlan = plan;
             AppLogger.Info("privacy", "scan.done", "Candidates: " + plan.Files.Count + "; skipped: " + plan.Notices.Count);
             return plan;
         }
-        internal static void ScanBrowser(FileScanPlan plan, string root, string process, CancellationToken token, OperationProgress progress = null, Func<string, bool> running = null)
+        internal static void ScanBrowser(FileScanPlan plan, string root, string process, CancellationToken token, OperationProgress progress = null, Func<string, bool> running = null, string browserId = null, string cacheRoot = null)
         {
-            if (PathSafety.Probe(root) == PathState.Missing) return;
+            browserId = browserId ?? (process == "msedge" ? "edge" : process);
+            if (!Directory.Exists(root)) return;
             try
             {
                 PathSafety.NoLinks(root);
-                foreach (var profile in Directory.GetDirectories(root))
+                var profiles = Directory.GetDirectories(root).Where(p => Path.GetFileName(p) == "Default" || Path.GetFileName(p).StartsWith("Profile ", StringComparison.Ordinal)).ToList();
+                if (File.Exists(Path.Combine(root, "Preferences"))) profiles.Add(root);
+                foreach (var profile in profiles)
                 {
                     if (token.IsCancellationRequested) break;
-                    var name = Path.GetFileName(profile);
-                    if (name != "Default" && !name.StartsWith("Profile ", StringComparison.Ordinal)) continue;
                     if (PathSafety.Probe(Path.Combine(profile, "Preferences")) != PathState.Present) continue;
                     foreach (var relative in new[] { "History", "Cookies", @"Network\Cookies" })
                     {
                         if (token.IsCancellationRequested) break;
-                        var path = Path.Combine(profile, relative);
-                        if (!File.Exists(path)) continue;
-                        if (!DatabaseAvailable(path, process, running))
-                        { plan.Notices.Add(new ItemResult { Path = path, Status = ItemStatus.Skipped, Reason = "op.browser_busy" }); continue; }
-                        try
-                        {
-                            using (var file = SafeFile.Open(path, profile, false))
-                            {
-                                if (!file.IsSqlite()) throw new IOException();
-                                plan.Files.Add(new FileCandidate { Path = path, Root = profile, Browser = process,
-                                    Group = "privacy." + (process == "chrome" ? "chrome" : "edge") + (relative == "History" ? ".history" : ".cookies"),
-                                    Bytes = file.Length, Fingerprint = file.Fingerprint });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            plan.Notices.Add(new ItemResult { Path = path, Status = ItemStatus.Skipped, Reason = "op.file_unavailable" });
-                            AppLogger.Warn("privacy", "scan.file.read.fail", "Database skipped. exceptionType=" + ex.GetType().Name);
-                        }
+                        AddDatabase(plan, Path.Combine(profile, relative), profile, process, "privacy." + browserId + (relative == "History" ? ".history" : ".cookies"),
+                            relative == "History" ? FileOperationKind.ChromiumHistory : FileOperationKind.ChromiumCookies, running, token);
                         progress?.Report(plan.Files.Count);
+                    }
+                    foreach (var relative in new[] { "Cache", "Code Cache", "GPUCache" })
+                    {
+                        ScanCache(plan, Path.Combine(profile, relative), process, "privacy." + browserId + ".cache", token, running);
+                        if (cacheRoot != null)
+                        {
+                            var profileRelative = profile.Substring(root.TrimEnd('\\').Length).TrimStart('\\');
+                            ScanCache(plan, Path.Combine(cacheRoot, profileRelative, relative), process, "privacy." + browserId + ".cache", token, running);
+                        }
                     }
                 }
             }

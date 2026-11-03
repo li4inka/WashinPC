@@ -1,0 +1,10 @@
+SQLite and System.Data.SQLite.Core 1.0.119
+
+The shipped SQLite engine and core ADO.NET provider are dedicated to the public
+domain by their authors. The LINQ/Entity Framework assemblies are not included.
+
+Upstream notices and terms:
+https://www.sqlite.org/copyright.html
+https://system.data.sqlite.org/home/doc/trunk/www/copyright.wiki
+
+Original NuGet packages, metadata and notices are retained in .nuget/offline-feed.

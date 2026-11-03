@@ -90,6 +90,11 @@
           "System.Reflection.Metadata": "1.6.0"
         }
       },
+      "Stub.System.Data.SQLite.Core.NetFramework": {
+        "type": "Transitive",
+        "resolved": "1.0.119",
+        "contentHash": "8b4SbSXAxXJ8tfn6bnBu0m+HXMZvkE+BfogUKITRFm+snxfT5BTK7fLZaAsNoFX8DkBBjtCEDd+ajWkcyu55QA=="
+      },
       "System.Buffers": {
         "type": "Transitive",
         "resolved": "4.5.1",
@@ -99,6 +104,14 @@
         "type": "Transitive",
         "resolved": "1.5.0",
         "contentHash": "EXKiDFsChZW0RjrZ4FYHu9aW6+P4MCgEDCklsVseRfhoO0F+dXeMSsMRAlVXIo06kGJ/zv+2w1a2uc2+kxxSaQ=="
+      },
+      "System.Data.SQLite.Core": {
+        "type": "Transitive",
+        "resolved": "1.0.119",
+        "contentHash": "bhQB8HVtRA+OOYw8UTD1F1kU+nGJ0/OZvH1JmlVUI4bGvgVEWeX1NcHjA765NvUoRVuCPlt8PrEpZ1thSsk1jg==",
+        "dependencies": {
+          "Stub.System.Data.SQLite.Core.NetFramework": "[1.0.119]"
+        }
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "Transitive",
@@ -138,7 +151,10 @@
         "contentHash": "ZD9TMpsmYJLrxbbmdvhwt9YEgG5WntEnZ/d1eH8JBX9LBp+Ju8BSBhUGbZMNVHHomWo2KVImJhTDl2hIgw/6MA=="
       },
       "washinpc": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "System.Data.SQLite.Core": "[1.0.119, )"
+        }
       }
     }
   }

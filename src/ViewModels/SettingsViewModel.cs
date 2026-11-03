@@ -106,6 +106,7 @@ namespace WashinPC.ViewModels
         public bool IsThemeDark => ThemeMode == ThemeService.ModeDark;
 
         public string ThemeStatusText => IsThemeAuto ? Localizer.T("settings.theme.auto.status") : Localizer.T("settings.theme.using", Localizer.T("settings.theme." + ThemeMode));
+        public string ThemeTitle => Localizer.T("settings.theme.title");
 
         public RelayCommand SetThemeAutoCommand { get; }
         public RelayCommand SetThemeLightCommand { get; }
@@ -125,12 +126,13 @@ namespace WashinPC.ViewModels
                 _selectedLanguage = LanguageOptions.First(x => x.Value == Localizer.Current);
                 OnPropertyChanged(nameof(SelectedLanguage));
                 OnPropertyChanged(nameof(ThemeStatusText));
+                OnPropertyChanged(nameof(ThemeTitle));
             };
             RegistryExpertMode = AppSettings.RegistryExpertMode;
 
             var initialThemeMode = AppSettings.ThemeMode;
-            if (!ThemeService.IsKnownMode(initialThemeMode) || initialThemeMode == ThemeService.ModeAuto)
-                initialThemeMode = ThemeService.ModeLight;
+            if (!ThemeService.IsKnownMode(initialThemeMode))
+                initialThemeMode = ThemeService.ModeAuto;
 
             ThemeService.Apply(initialThemeMode);
             _themeMode = initialThemeMode;

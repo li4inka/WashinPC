@@ -245,6 +245,45 @@ namespace WashinPC.Localization
 
         private static void EnsureCriticalKeys()
         {
+            AddPair("backup.date", "Дата", "Date");
+            AddPair("backup.status", "Состояние", "Status");
+            AddPair("backup.targets", "Объекты", "Objects");
+            AddPair("backup.view", "Разрядность", "View");
+            AddPair("backup.current", "Сейчас", "Current");
+            AddPair("backup.saved", "После восстановления", "After restore");
+            AddPair("backup.compare", "Сравнить", "Compare");
+            AddPair("backup.restore", "Восстановить", "Restore");
+            AddPair("backup.folder", "Открыть папку", "Open folder");
+            AddPair("backup.refresh", "Обновить", "Refresh");
+            AddPair("backup.help", "Выберите копию и сравните изменения. Перед восстановлением сохраняется текущее состояние. Копии относятся к реестру и службам; удалённые файлы очистки не восстанавливаются. Для старой копии без сведений о разрядности выберите x86 или x64.", "Select a backup and compare changes. The current state is saved before restoration. Backups cover registry and services; cleaned files cannot be restored. Choose x86 or x64 for legacy backups without registry view information.");
+            AddPair("backup.invalid", "Копия недоступна, повреждена, не поддерживается или объект изменился. Проверьте файл и права доступа.", "Backup unavailable, invalid, unsupported, or object changed. Check the file and access permissions.");
+            AddPair("backup.empty", "Резервных копий пока нет.", "No backups yet.");
+            AddPair("backup.no_changes", "Изменений нет: сохранённые данные совпадают с текущими.", "No changes: saved data matches the current state.");
+            AddPair("backup.review", "Изменений: {0}. Проверьте сравнение перед восстановлением.", "Changes: {0}. Review the comparison before restoring.");
+            AddPair("backup.confirm", "Применить показанные изменения из резервной копии? Текущие значения будут перезаписаны. Перед записью будет создана копия текущего состояния.", "Apply the displayed backup changes? Current values will be overwritten. A backup of the current state will be created first.");
+            AddPair("backup.absent", "Отсутствует", "Absent");
+            AddPair("backup.key", "Ключ существует", "Key exists");
+            AddPair("registry.cat.services", "Службы Windows", "Windows services");
+            AddPair("registry.cat.info.registry.cat.services", "Отключает остановленные службы с собственным отсутствующим EXE. Службы не удаляются. Драйверы, общие процессы и неоднозначные пути пропускаются.", "Disables stopped services whose own EXE is missing. Services are not deleted. Drivers, shared processes and ambiguous paths are skipped.");
+            AddPair("service.start.2", "Автоматически", "Automatic");
+            AddPair("service.start.3", "Вручную", "Manual");
+            AddPair("service.start.4", "Отключена", "Disabled");
+            AddPair("settings.theme.title", "Тема оформления", "Appearance");
+            AddPair("privacy.unsupported_schema", "Структура базы браузера не поддерживается; данные сохранены", "Browser database schema is unsupported; data was preserved");
+            AddPair("privacy.records", "Записей: {0}", "Records: {0}");
+            AddPair("privacy.summary", "Файлов: {0}; записей: {1}; файлов к удалению: {2}", "Files: {0}; records: {1}; file bytes to delete: {2}");
+            AddPair("privacy.result", "Удалено файлов: {0}; очищено записей: {1}.", "Files deleted: {0}; records cleaned: {1}.");
+            foreach (var browser in new[] { new[] { "chrome", "Chrome" }, new[] { "edge", "Edge" }, new[] { "firefox", "Firefox" }, new[] { "opera", "Opera" }, new[] { "opera_gx", "Opera GX" }, new[] { "brave", "Brave" }, new[] { "yandex", "Yandex Browser" } })
+            {
+                var ruName = browser[0] == "yandex" ? "Яндекс Браузер" : browser[1];
+                AddPair("privacy." + browser[0] + ".history", ruName + " — история", browser[1] + " — history");
+                AddPair("privacy." + browser[0] + ".cookies", ruName + " — cookies (выход из аккаунтов)", browser[1] + " — cookies (signs out)");
+                AddPair("privacy." + browser[0] + ".cache", ruName + " — кэш", browser[1] + " — cache");
+            }
+            AddPair("registry.selection.all", "Выбрать все доступные исправления", "Select all available repairs");
+            AddPair("registry.selection.fixable", "Выбрать запись для исправления", "Select this record for repair");
+            AddPair("registry.selection.summary", "Выбрано: {0} из {1} доступных для исправления. Только диагностика: {2}.", "Selected: {0} of {1} repairable. Diagnostic only: {2}.");
+            AddPair("registry.selection.help", "Флажок отключён, если не удалось получить снимок ключа для проверки и резервного копирования. Повторите сканирование с необходимыми правами доступа.", "A checkbox is disabled when the key snapshot needed for validation and backup could not be captured. Scan again with the required access permissions.");
             AddPair("op.cancel", "Отмена", "Cancel");
             AddPair("op.cancelled", "Операция отменена. Выполненные изменения сохранены.", "Cancelled. Completed changes are retained.");
             AddPair("op.failed", "Не удалось выполнить операцию. Подробности в журнале.", "Operation failed. See the diagnostic log.");
@@ -341,9 +380,9 @@ namespace WashinPC.Localization
             AddPair("settings.lang.russian", "Русский", "Russian");
             AddPair("settings.lang.english", "English", "English");
             AddPair("settings.appearance", "Оформление", "Appearance");
-            AddPair("settings.theme.auto", "Auto", "Auto");
-            AddPair("settings.theme.light", "Light", "Light");
-            AddPair("settings.theme.dark", "Dark", "Dark");
+            AddPair("settings.theme.auto", "Системная", "System");
+            AddPair("settings.theme.light", "Светлая", "Light");
+            AddPair("settings.theme.dark", "Тёмная", "Dark");
             AddPair("settings.theme.using", "Используется тема: {0}", "Using {0} theme");
             AddPair("settings.theme.auto.status", "Автовыбор по системе", "Auto-detected theme");
 
