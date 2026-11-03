@@ -102,3 +102,9 @@ See [CHANGELOG](CHANGELOG.md), [CONTRIBUTING](CONTRIBUTING.md), [community condu
 ## License
 
 Copyright © 2026 Kulich Software. Distributed under [GPL-3.0](LICENSE). Inter and Lucide retain their licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=li4inka/WashinPC&type=Date)](https://star-history.com/#li4inka/WashinPC&Date)
+
+</div>

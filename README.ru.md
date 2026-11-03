@@ -105,3 +105,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1 -Archite
 ## Лицензия
 
 Copyright © 2026 Kulich Software. [GPL-3.0](LICENSE). Inter и Lucide сохраняют собственные лицензии: [уведомления](THIRD_PARTY_NOTICES.md).
+
+<div align="center">
+
+[![История звёзд WashinPC](https://api.star-history.com/svg?repos=li4inka/WashinPC&type=Date)](https://star-history.com/#li4inka/WashinPC&Date)
+
+</div>
