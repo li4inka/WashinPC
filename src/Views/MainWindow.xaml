@@ -31,9 +31,7 @@
 
                     <Border Grid.Row="0" Padding="18,18,18,14" BorderBrush="{DynamicResource Brush.SidebarBorder}" BorderThickness="0,0,0,1">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Image Width="32" Height="32" Source="/WashinPC;component/Assets/WashinPC.png" RenderOptions.BitmapScalingMode="HighQuality"/>
-
-                            <TextBlock Text="{Binding AppInfo.ProductName}" Margin="10,0,0,0" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
+                            <TextBlock Text="{Binding AppInfo.ProductName}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
 
                             <Border>
                                 <Border.Style>
