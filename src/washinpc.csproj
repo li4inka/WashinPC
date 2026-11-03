@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
+    <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
     <UseWPF>true</UseWPF>
     <RootNamespace>WashinPC</RootNamespace>
     <AssemblyName>WashinPC</AssemblyName>
@@ -31,4 +32,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+  <!-- Public label from version.json; retain commit metadata for diagnostics. -->
+  <Target Name="ApplyReleaseLabel" BeforeTargets="GenerateAssemblyNBGVVersionInfo" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <ReleaseLabel>$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\version.json')), '(?s).*&quot;version&quot;\s*:\s*&quot;([^&quot;]+)&quot;.*', '$1'))</ReleaseLabel>
+      <AssemblyInformationalVersion>$(ReleaseLabel)+$(GitCommitId)</AssemblyInformationalVersion>
+    </PropertyGroup>
+  </Target>
 </Project>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using WashinPC.Core;
 
@@ -127,10 +127,10 @@ namespace WashinPC.Localization
             ("contextmenu.col.registry", "Реестр"),
             ("contextmenu.btn.apply", "Применить"),
 
-            ("cleaner.user_temp", "User TEMP files"),
-            ("cleaner.windows_temp", "Windows TEMP files"),
-            ("cleaner.prefetch", "Prefetch files"),
-            ("cleaner.recent", "Recent documents"),
+            ("cleaner.user_temp", "Временные файлы пользователя"),
+            ("cleaner.windows_temp", "Временные файлы Windows"),
+            ("cleaner.prefetch", "Файлы Prefetch (необязательно)"),
+            ("cleaner.recent", "Недавние ярлыки"),
 
             ("privacy.chrome", "Google Chrome"),
             ("privacy.edge", "Microsoft Edge"),
@@ -245,6 +245,29 @@ namespace WashinPC.Localization
 
         private static void EnsureCriticalKeys()
         {
+            AddPair("op.cancel", "Отмена", "Cancel");
+            AddPair("op.cancelled", "Операция отменена. Выполненные изменения сохранены.", "Cancelled. Completed changes are retained.");
+            AddPair("op.failed", "Не удалось выполнить операцию. Подробности в журнале.", "Operation failed. See the diagnostic log.");
+            AddPair("op.file_unavailable", "Файл недоступен или безопасная обработка не поддерживается", "File unavailable or safe processing is unsupported");
+            AddPair("op.browser_busy", "Браузер работает или присутствуют служебные файлы SQLite", "Browser is running or SQLite recovery files are present");
+            AddPair("op.changed", "Объект изменился или больше не подходит для обработки", "Object changed or is no longer eligible");
+            AddPair("op.applied", "Выполнено", "Applied");
+            AddPair("op.backup_failed", "Ошибка резервирования; изменение пропущено", "Backup failed; change skipped");
+            AddPair("op.backup_or_write_failed", "Ошибка резервирования или записи; проверьте копии и журнал", "Backup or write failed; check backups and log");
+            AddPair("op.machine_blocked", "Расширение заблокировано на уровне компьютера", "Extension is blocked at machine level");
+            AddPair("op.diagnostic", "Только диагностика: автоматическое исправление отключено", "Diagnostic only: automatic repair disabled");
+            AddPair("op.progress", "Обработано объектов: {0}", "Objects processed: {0}");
+            AddPair("op.scan_result", "Найдено файлов: {0}. Пропущено объектов: {1}.", "Files found: {0}. Objects skipped: {1}.");
+            AddPair("op.result", "Выполнено: {0}; пропущено: {1}; ошибок: {2}; удалено: {3}.", "Applied: {0}; skipped: {1}; failed: {2}; deleted: {3}.");
+            AddPair("op.backups_count", "Резервных копий: {0}", "Backup files: {0}");
+            AddPair("op.delete_confirm", "Безвозвратно удалить выбранные файлы из результата анализа? Копии файлов не сохраняются.", "Permanently delete the selected files from this scan? No recovery copies are kept.");
+            AddPair("op.privacy_confirm", "Безвозвратно удалить выбранную историю и/или cookie? Удаление cookie приведёт к выходу из аккаунтов сайтов. Закройте браузеры.", "Permanently delete selected history and/or cookies? Removing cookies signs you out of websites. Close browsers first.");
+            AddPair("op.backups", "Резервные копии", "Backups");
+            AddPair("op.details", "Подробности", "Details");
+            AddPair("privacy.chrome.history", "Chrome — история", "Chrome — history");
+            AddPair("privacy.chrome.cookies", "Chrome — cookie (выход из аккаунтов)", "Chrome — cookies (signs out)");
+            AddPair("privacy.edge.history", "Edge — история", "Edge — history");
+            AddPair("privacy.edge.cookies", "Edge — cookie (выход из аккаунтов)", "Edge — cookies (signs out)");
             AddPair("admin.required", "Для запуска приложения требуются права администратора.", "Administrator privileges are required to run this app.");
 
             AddPair("version.label", "Версия", "Version");

@@ -1,0 +1,34 @@
+﻿{
+    "Label":  "hardened-rendered",
+    "Utc":  "\/Date(1793702791200)\/",
+    "OS":  "Microsoft Windows NT 10.0.26200.0",
+    "Runtime":  "4.0.30319.42000",
+    "Method":  "Headless WPF construction/layout, cached navigation; 1000 x 64-byte files. One warm-up + five samples. Not process startup or physical DPI validation.",
+    "Samples":  [
+                    {
+                        "WindowConstructionMs":  5.832,
+                        "CachedNavigationMs":  1.094475,
+                        "Scan1000Ms":  89.0964
+                    },
+                    {
+                        "WindowConstructionMs":  5.2043,
+                        "CachedNavigationMs":  1.10592,
+                        "Scan1000Ms":  90.8455
+                    },
+                    {
+                        "WindowConstructionMs":  5.0749,
+                        "CachedNavigationMs":  1.09406,
+                        "Scan1000Ms":  97.53240000000001
+                    },
+                    {
+                        "WindowConstructionMs":  5.0152,
+                        "CachedNavigationMs":  1.0815675,
+                        "Scan1000Ms":  89.529800000000009
+                    },
+                    {
+                        "WindowConstructionMs":  4.9848,
+                        "CachedNavigationMs":  1.078505,
+                        "Scan1000Ms":  89.6937
+                    }
+                ]
+}

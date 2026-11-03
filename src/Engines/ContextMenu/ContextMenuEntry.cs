@@ -1,4 +1,4 @@
-﻿namespace WashinPC.Engines.ContextMenu
+namespace WashinPC.Engines.ContextMenu
 {
     public enum ContextMenuTarget
     {
@@ -25,6 +25,8 @@
 
     public sealed class ContextMenuEntry
     {
+        internal string Snapshot { get; set; }
+        public Microsoft.Win32.RegistryView View { get; set; } = Microsoft.Win32.RegistryView.Default;
         public string Name { get; set; }          // Display-ish name (best effort)
         public ContextMenuTarget Target { get; set; }
         public ContextMenuKind Kind { get; set; }

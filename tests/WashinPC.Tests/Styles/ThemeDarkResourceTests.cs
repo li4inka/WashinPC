@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,7 +15,7 @@ namespace WashinPC.Tests.Styles
         public void ThemeDark_HasRequiredBrushKeys()
         {
             var root = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", ".."));
-            var darkThemePath = Path.Combine(root, "src", "WashinPC", "Styles", "Theme.Dark.xaml");
+            var darkThemePath = Path.Combine(root, "src", "Styles", "Theme.Dark.xaml");
             Assert.IsTrue(File.Exists(darkThemePath), "Theme.Dark.xaml was not found.");
 
             var doc = XDocument.Load(darkThemePath);

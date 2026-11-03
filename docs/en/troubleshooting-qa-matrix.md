@@ -1,4 +1,4 @@
-﻿# Troubleshooting And QA Matrix
+# Troubleshooting And QA Matrix
 
 ## Common Issues
 
@@ -19,12 +19,12 @@ Action: re-run with elevated rights, check endpoint security policies.
 
 ## QA Matrix (Manual)
 
-| Scenario | Win7 x64 | Win8 x64 | Win10 x64 | Win11 x64 | Result criteria |
+| Scenario | Win7 x64 | Win8.1 x64 | Win10 x64 | Win11 x64 | Result criteria |
 |---|---|---|---|---|---|
 | Launch + admin check | Pending | Pending | Pending | Pending | Starts cleanly, admin flow works |
 | Cleaner scan/clean selected groups | Pending | Pending | Pending | Pending | Only selected groups are removed |
 | Privacy scan/clean selected groups | Pending | Pending | Pending | Pending | Only selected groups are removed |
-| Registry safe-only scan/fix | Pending | Pending | Pending | Pending | Counters and re-scan are consistent |
+| Registry safe-only scan/fix | Pending | Pending | Pending | Pending | Counters and retained results are consistent |
 | Restore point fail flow | Pending | Pending | Pending | Pending | Continue/Cancel both behave correctly |
 | Context menu disable/delete/apply | Pending | Pending | Pending | Pending | UI actions match applied registry changes |
 | RU/EN switch and key coverage | Pending | Pending | Pending | Pending | No raw localization keys in critical UI |
@@ -39,3 +39,6 @@ A release candidate is `PASS` only when:
 3. Logging policy checklist is fully satisfied.
 
 Otherwise: `FAIL`.
+
+
+Local automated evidence and qualification limits: [validation](../validation/README.md). Backup failure now blocks a change; diagnostics never become fixable solely through expert mode.

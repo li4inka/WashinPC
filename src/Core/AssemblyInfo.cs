@@ -1,13 +1,13 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("WashinPC")]
-[assembly: AssemblyDescription("Lightweight cleaner for Windows XP - 11")]
+[assembly: AssemblyDescription("Lightweight cleaner for Windows 7 SP1 - 11")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Kulich Software")]
 [assembly: AssemblyProduct("WashinPC")] 
-[assembly: AssemblyCopyright("Public Domain")]
+[assembly: AssemblyCopyright("Copyright © 2026 Kulich Software; GPL-3.0")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

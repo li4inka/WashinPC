@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Input;
 
 namespace WashinPC.Core.Mvvm
@@ -7,6 +7,7 @@ namespace WashinPC.Core.Mvvm
     {
         private readonly Action _execute;
         private readonly Func<bool> _can;
+        private readonly System.Windows.Threading.Dispatcher _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
 
         public RelayCommand(Action execute, Func<bool> can = null)
         {
@@ -15,13 +16,24 @@ namespace WashinPC.Core.Mvvm
         }
 
         public bool CanExecute(object parameter) => _can?.Invoke() ?? true;
-        public void Execute(object parameter) => _execute();
+        public void Execute(object parameter) { if (CanExecute(parameter)) _execute(); }
 
-        public event EventHandler CanExecuteChanged;
+        private event EventHandler Changed;
+        public event EventHandler CanExecuteChanged
+        {
+            add { Changed += value; CommandManager.RequerySuggested += value; }
+            remove { Changed -= value; CommandManager.RequerySuggested -= value; }
+        }
 
         public void RaiseCanExecuteChanged()
         {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            if (_dispatcher.HasShutdownStarted) return;
+            if (!_dispatcher.CheckAccess())
+            {
+                _dispatcher.BeginInvoke(new Action(RaiseCanExecuteChanged));
+                return;
+            }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
     }

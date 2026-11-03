@@ -1,106 +1,112 @@
-﻿using System;
-using System.Diagnostics;
+using System;
 using System.IO;
+using System.Linq;
+using System.Text;
 using Microsoft.Win32;
 
 namespace WashinPC.Engines.Registry
 {
     internal static class RegistryBackup
     {
-        /// <summary>
-        /// Папка с бэкапами реестра
-        /// </summary>
+        internal static string TestBackupRoot;
         public static string GetBackupRoot()
         {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "WashinPC_Backups",
-                "Registry");
-
-            Directory.CreateDirectory(dir);
-            return dir;
+            var dir = TestBackupRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WashinPC_Backups", "Registry");
+            Directory.CreateDirectory(dir); return dir;
         }
-
-        /// <summary>
-        /// Экспортирует конкретный ключ реестра в .reg (точечный бэкап)
-        /// </summary>
-        public static string ExportKey(RegistryHive hive, RegistryView view, string subKeyPath)
+        internal static string HiveName(RegistryHive hive)
         {
-            try
+            switch (hive)
             {
-                if (string.IsNullOrWhiteSpace(subKeyPath))
-                    return null;
-
-                string hiveStr =
-                    hive == RegistryHive.LocalMachine ? "HKLM" :
-                    hive == RegistryHive.CurrentUser ? "HKCU" :
-                    hive == RegistryHive.ClassesRoot ? "HKCR" :
-                    hive == RegistryHive.Users ? "HKU" :
-                    null;
-
-                if (hiveStr == null)
-                    return null;
-
-                subKeyPath = subKeyPath.Trim().TrimStart('\\');
-
-                var backupDir = GetBackupRoot();
-                var safeName = MakeSafeFileName($"{hiveStr}_{ViewToString(view)}_{subKeyPath}");
-                if (safeName.Length > 140)
-                    safeName = safeName.Substring(0, 140);
-
-                var file = Path.Combine(
-                    backupDir,
-                    $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{safeName}.reg");
-
-                var fullKey = $"{hiveStr}\\{subKeyPath}";
-                var args = $"export \"{fullKey}\" \"{file}\" /y {RegViewArg(view)}";
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "reg.exe",
-                    Arguments = args,
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.WaitForExit();
-                    if (p.ExitCode != 0 || !File.Exists(file))
-                        return null;
-                }
-
-                return file;
-            }
-            catch
-            {
-                return null;
+                case RegistryHive.CurrentUser: return "HKEY_CURRENT_USER";
+                case RegistryHive.LocalMachine: return "HKEY_LOCAL_MACHINE";
+                case RegistryHive.ClassesRoot: return "HKEY_CLASSES_ROOT";
+                case RegistryHive.Users: return "HKEY_USERS";
+                default: throw new ArgumentException("Unsupported hive.");
             }
         }
-
-        private static string ViewToString(RegistryView view)
-            => view == RegistryView.Registry32 ? "x86" : "x64";
-
-        private static string RegViewArg(RegistryView view)
-            => view == RegistryView.Registry32 ? "/reg:32" : "/reg:64";
-
-        private static string MakeSafeFileName(string s)
+        internal static string Capture(RegistryHive hive, RegistryView view, string path)
         {
-            foreach (var c in Path.GetInvalidFileNameChars())
-                s = s.Replace(c, '_');
-
-            return s
-                .Replace('\\', '_')
-                .Replace('/', '_')
-                .Replace(':', '_')
-                .Replace('*', '_')
-                .Replace('?', '_')
-                .Replace('"', '_')
-                .Replace('<', '_')
-                .Replace('>', '_')
-                .Replace('|', '_');
+            using (var root = RegistryKey.OpenBaseKey(hive, view))
+            using (var key = root.OpenSubKey(path, false))
+            {
+                if (key == null) throw new IOException("Registry object is unavailable.");
+                var text = new StringBuilder("Windows Registry Editor Version 5.00\r\n\r\n");
+                AppendKey(text, key, HiveName(hive) + "\\" + path, 0);
+                return text.ToString();
+            }
+        }
+        private static void AppendKey(StringBuilder text, RegistryKey key, string path, int depth)
+        {
+            if (depth > 64 || path.IndexOfAny(new[] {'\r','\n',']'}) >= 0) throw new IOException("Unsupported registry key.");
+            text.Append('[').Append(path).Append("]\r\n");
+            foreach (var name in key.GetValueNames().OrderBy(x => x, StringComparer.Ordinal))
+            {
+                text.Append(ValueName(name)).Append('=').Append(Encode(key.GetValueKind(name), key.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames))).Append("\r\n");
+            }
+            text.Append("\r\n");
+            foreach (var name in key.GetSubKeyNames().OrderBy(x => x, StringComparer.Ordinal))
+                using (var child = key.OpenSubKey(name, false))
+                { if (child == null) throw new IOException(); AppendKey(text, child, path + "\\" + name, depth + 1); }
+        }
+        internal static string ValueName(string name)
+        {
+            if (name.IndexOfAny(new[] {'\r','\n','\0'}) >= 0) throw new IOException("Unsupported value name.");
+            return name.Length == 0 ? "@" : "\"" + name.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        }
+        internal static string Encode(RegistryValueKind kind, object value)
+        {
+            byte[] bytes;
+            switch (kind)
+            {
+                case RegistryValueKind.DWord: return "dword:" + unchecked((uint)(int)value).ToString("x8");
+                case RegistryValueKind.QWord: bytes = BitConverter.GetBytes((long)value); break;
+                case RegistryValueKind.String:
+                case RegistryValueKind.ExpandString: bytes = Encoding.Unicode.GetBytes((string)value + "\0"); break;
+                case RegistryValueKind.MultiString: bytes = Encoding.Unicode.GetBytes(string.Join("\0", (string[])value) + "\0\0"); break;
+                case RegistryValueKind.Binary:
+                case RegistryValueKind.None: bytes = (byte[])value; break;
+                default: throw new IOException("Unsupported registry type.");
+            }
+            var type = kind == RegistryValueKind.None ? 0 : (int)kind;
+            var encoded = new StringBuilder("hex(" + type.ToString("x") + "):");
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                if (i > 0) encoded.Append(i % 24 == 0 ? ",\\\r\n  " : ",");
+                encoded.Append(bytes[i].ToString("x2"));
+            }
+            return encoded.ToString();
+        }
+        internal static string ExportValue(RegistryHive hive, RegistryView view, string path, string name)
+        {
+            using (var root = RegistryKey.OpenBaseKey(hive, view))
+            using (var key = root.OpenSubKey(path, false))
+            {
+                var exists = key != null && key.GetValueNames().Contains(name, StringComparer.OrdinalIgnoreCase);
+                var value = exists ? Encode(key.GetValueKind(name), key.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames)) : "-";
+                return Save(hive, view, path, "Windows Registry Editor Version 5.00\r\n\r\n[" + HiveName(hive) + "\\" + path + "]\r\n" + ValueName(name) + "=" + value + "\r\n");
+            }
+        }
+        public static string ExportKey(RegistryHive hive, RegistryView view, string path)
+        {
+            try { return Save(hive, view, path, Capture(hive, view, path)); }
+            catch { Core.Logging.AppLogger.Warn("registry", "backup.failed", "Backup failed; mutation is blocked."); return null; }
+        }
+        private static string Save(RegistryHive hive, RegistryView view, string path, string text)
+        {
+            var actualView = view == RegistryView.Default ? (Environment.Is64BitProcess ? RegistryView.Registry64 : RegistryView.Registry32) : view;
+            var file = Path.Combine(GetBackupRoot(), DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N") + ".reg");
+            using (var stream = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                var preamble = Encoding.Unicode.GetPreamble(); var data = Encoding.Unicode.GetBytes(text);
+                stream.Write(preamble, 0, preamble.Length); stream.Write(data, 0, data.Length); stream.Flush(true);
+            }
+            if (File.ReadAllText(file, Encoding.Unicode) != text) throw new IOException("Backup verification failed.");
+            var architecture = actualView == RegistryView.Registry64 ? "64" : "32";
+            File.WriteAllText(file + ".txt", "WashinPC registry backup / Резервная копия реестра\r\n" + HiveName(hive) + "\\" + path + "\r\nView / Представление: " + architecture +
+                "\r\nInspect current values before import; importing may overwrite newer changes.\r\nПеред импортом сравните значения: импорт может перезаписать новые изменения.\r\nRun in the original Windows account / Запускайте в исходной учётной записи:\r\nreg.exe import \"" + file + "\" /reg:" + architecture + "\r\n", Encoding.UTF8);
+            Core.Logging.AppLogger.Info("registry", "backup.created", "Verified registry backup created.");
+            return file;
         }
     }
 }

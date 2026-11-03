@@ -57,7 +57,13 @@ namespace WashinPC.Core.Utils
                 if (Directory.Exists(dir))
                     result.AddRange(Directory.GetFiles(dir, file));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Warn(
+                    "utils",
+                    "expand_wildcards.fail",
+                    "ExpandWildcards failed. exceptionType=" + ex.GetType().Name);
+            }
 
             return result;
         }

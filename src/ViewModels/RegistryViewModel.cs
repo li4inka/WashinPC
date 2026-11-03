@@ -1,4 +1,5 @@
-﻿using System;
+using WashinPC.Engines.Operations;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace WashinPC.ViewModels
         public RegistryIssueView(RegistryIssue model)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
-            _isSelected = true;
+            _isSelected = model.CanFix;
         }
 
         public bool IsSelected
@@ -30,12 +31,14 @@ namespace WashinPC.ViewModels
             get => _isSelected;
             set
             {
+                if (!Model.CanFix && value) return;
                 if (_isSelected == value) return;
                 _isSelected = value;
                 OnPropertyChanged();
             }
         }
 
+        public bool CanFix => Model.CanFix;
         public string Category => Model.Category;
         public string KeyPath => Model.KeyPath;
         public string Details => Model.Details;
@@ -58,18 +61,6 @@ namespace WashinPC.ViewModels
 
         public ObservableCollection<RegistryIssueView> Items { get; }
             = new ObservableCollection<RegistryIssueView>();
-
-        private bool _createBackup = true;
-        public bool CreateBackup
-        {
-            get => _createBackup;
-            set
-            {
-                if (_createBackup == value) return;
-                _createBackup = value;
-                OnPropertyChanged();
-            }
-        }
 
         private string _summaryText;
         public string SummaryText
@@ -110,8 +101,8 @@ namespace WashinPC.ViewModels
 
         public RegistryViewModel()
         {
-            ScanCommand = new RelayCommand(async () => await ScanAsync(), () => !IsBusy);
-            FixCommand = new RelayCommand(async () => await FixAsync(), () => !IsBusy);
+            ScanCommand = new RelayCommand(async () => await ScanAsync(), () => CanStart);
+            FixCommand = new RelayCommand(async () => await FixAsync(), () => CanStart && Items.Any(x => x.IsSelected && x.CanFix));
 
             BuildCategories();
             AppSettings.SettingChanged += OnSettingChanged;
@@ -140,11 +131,11 @@ namespace WashinPC.ViewModels
             bool expertMode = AppSettings.RegistryExpertMode;
 
             // ключи должны совпадать с тем, что кладёт RegistryScanner в issue.CategoryKey
-            Add("registry.cat.uninstall", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.uninstall", RegistryRiskLevel.Advanced, false, expertMode);
             Add("registry.cat.shared_dlls", RegistryRiskLevel.Safe, true, true);
-            Add("registry.cat.unused_file_ext", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.unused_file_ext", RegistryRiskLevel.Advanced, false, expertMode);
             Add("registry.cat.help_files", RegistryRiskLevel.Safe, true, true);
-            Add("registry.cat.obsolete_software", RegistryRiskLevel.Safe, true, true);
+            Add("registry.cat.obsolete_software", RegistryRiskLevel.Advanced, false, expertMode);
 
             Add("registry.cat.applications", RegistryRiskLevel.Advanced, false, expertMode);
             Add("registry.cat.type_libraries", RegistryRiskLevel.Advanced, false, expertMode);
@@ -178,165 +169,60 @@ namespace WashinPC.ViewModels
             ));
         }
 
-        private async Task ScanAsync()
+        private Task ScanAsync()
         {
-            var operationId = "registry-scan-" + Guid.NewGuid().ToString("N");
-            AppLogger.Info("registry", "scan.start", "Starting registry scan.", operationId);
-
-            try
+            var enabled = new HashSet<string>(Categories.Where(x => x.IsAvailable && x.IsChecked).Select(x => x.CategoryKey));
+            return RunOperation(async token =>
             {
-                IsBusy = true;
                 SetStatus(Localizer.T("registry.scanning"));
-
+                var found = await Task.Run(() => _scanner.ScanAll(token, enabled).ToList());
                 Items.Clear();
-
-                // 1) сканируем всё, что умеет сканер
-                var all = await Task.Run(() => _scanner.ScanAll().ToList());
-
-                // 2) фильтруем по выбранным категориям (чтобы выбор реально влиял на результат)
-                var enabledKeys = new HashSet<string>(
-                    Categories
-                        .Where(c => c.IsAvailable && c.IsChecked)
-                        .Select(c => c.CategoryKey)
-                );
-
-                var filtered = all.Where(i => enabledKeys.Contains(i.CategoryKey)).ToList();
-
-                foreach (var issue in filtered)
+                foreach (var issue in found)
                 {
-                    issue.RefreshText(); // подтянуть тексты под текущий язык
-                    Items.Add(new RegistryIssueView(issue));
+                    var item = new RegistryIssueView(issue);
+                    item.PropertyChanged += (sender, args) => { if (args.PropertyName == nameof(RegistryIssueView.IsSelected)) { UpdateAllSelectedState(); (FixCommand as RelayCommand)?.RaiseCanExecuteChanged(); } };
+                    Items.Add(item);
                 }
-
-                UpdateAllSelectedState();
-                UpdateSummary();
-                AppLogger.Info("registry", "scan.done", "Registry scan completed. Found: " + filtered.Count, operationId);
-            }
-            finally
-            {
-                IsBusy = false;
-                SetStatus(string.Empty);
-            }
+                UpdateAllSelectedState(); UpdateSummary(); SetStatus(SummaryText);
+            });
         }
-
         private async Task FixAsync()
         {
-            var selected = Items.Where(i => i.IsSelected).ToList();
-            if (selected.Count == 0)
+            var selected = Items.Where(x => x.IsSelected && x.CanFix).ToArray();
+            if (selected.Length == 0 || DialogService.ShowConfirm(Loc.RegistryConfirmFix.Value) != DialogResult.Yes) return;
+            await RunOperation(async token =>
             {
-                SetStatus(Localizer.T("registry.nothing_selected"));
-                return;
-            }
-
-            if (DialogService.ShowConfirm(Loc.RegistryConfirmFix.Value, Localizer.T("registry.info.title"))
-                != DialogResult.Yes)
-                return;
-
-            var operationId = "registry-fix-" + Guid.NewGuid().ToString("N");
-            AppLogger.Info("registry", "fix.start", "Starting registry fix.", operationId);
-
-            bool completed = false;
-            bool hasWarnings = false;
-
-            try
-            {
-                IsBusy = true;
-
                 SetStatus(Localizer.T("registry.fixing"));
-
-                string restoreError = string.Empty;
-                bool hasRestorePoint = await Task.Run(() =>
+                string error = "";
+                var restore = await Task.Run(() => SystemRestorePoint.TryCreate("WashinPC Registry Cleanup", out error));
+                AppLogger.Info("registry", restore ? "restorepoint.created" : "restorepoint.failed", restore ? "Restore point created." : "Restore point unavailable.");
+                if (token.IsCancellationRequested) { SetStatus(Localizer.T("op.cancelled")); return; }
+                if (!restore && DialogService.ShowConfirm(Localizer.T("registry.restorepoint.failed.confirm", error)) != DialogResult.Yes) return;
+                var context = new RegistryFixContext { AllowMutation = true, CreateBackup = true, HasRestorePoint = restore };
+                var result = await Task.Run(() =>
                 {
-                    string err;
-                    var ok = SystemRestorePoint.TryCreate(
-                        "WashinPC Registry Cleanup",
-                        out err);
-                    restoreError = err;
-                    return ok;
-                });
-                if (hasRestorePoint)
-                    AppLogger.Info("registry", "restorepoint.created", "System restore point created.", operationId);
-
-                if (!hasRestorePoint)
-                {
-                    AppLogger.Warn("registry", "restorepoint.fail", "System restore point creation failed: " + restoreError, operationId);
-
-                    var confirm = DialogService.ShowConfirm(
-                        Localizer.T("registry.restorepoint.failed.confirm", restoreError),
-                        Localizer.T("registry.info.title"));
-
-                    if (confirm != DialogResult.Yes)
-                    {
-                        SetStatus(Localizer.T("registry.restorepoint.cancelled"));
-                        AppLogger.Warn("registry", "fix.cancelled", "Registry fix cancelled by user after restore point failure.", operationId);
-                        return;
-                    }
-                }
-
-                var context = new RegistryFixContext
-                {
-                    AllowMutation = true,
-                    CreateBackup = CreateBackup,
-                    HasRestorePoint = hasRestorePoint
-                };
-
-                var session = new RegistryFixSessionResult();
-
-                await Task.Run(() =>
-                {
+                    var outcome = new OperationResult();
                     foreach (var item in selected)
                     {
+                        var record = new ItemResult { Path = item.KeyPath }; outcome.Items.Add(record);
+                        if (token.IsCancellationRequested) { outcome.Cancelled = true; record.Status = ItemStatus.Cancelled; record.Reason = "op.cancelled"; continue; }
                         try
                         {
-                            var res = item.Model.Fix?.Invoke(context) ?? RegistryFixResult.Failed;
-                            if (res == RegistryFixResult.Fixed) session.FixedCount++;
-                            else if (res == RegistryFixResult.Skipped || res == RegistryFixResult.None) session.SkippedCount++;
-                            else session.FailedCount++;
+                            var fixedResult = item.Model.Fix(context);
+                            record.Status = fixedResult == RegistryFixResult.Fixed ? ItemStatus.Applied : fixedResult == RegistryFixResult.Failed ? ItemStatus.Failed : ItemStatus.Skipped;
+                            record.Reason = fixedResult == RegistryFixResult.Fixed ? "op.applied" : fixedResult == RegistryFixResult.Failed ? "op.backup_or_write_failed" : "op.changed";
                         }
-                        catch
-                        {
-                            session.FailedCount++;
-                        }
+                        catch { record.Status = ItemStatus.Failed; record.Reason = "op.failed"; }
                     }
+                    outcome.Backups.AddRange(context.Backups); return outcome;
                 });
-
-                session.BackupCount = context.Backups.Count;
-
-                foreach (var logEntry in context.Logs)
-                {
-                    if (logEntry.StartsWith("Backup failed", StringComparison.OrdinalIgnoreCase))
-                        AppLogger.Warn("registry", "backup.fail", logEntry, operationId);
-                    else
-                        AppLogger.Info("registry", "backup.ok", logEntry, operationId);
-                }
-
-                var statusText = Localizer.T(
-                    "registry.fixed.summary",
-                    session.FixedCount,
-                    session.SkippedCount,
-                    session.FailedCount);
-
-                SetStatus(statusText);
-                hasWarnings = session.FailedCount > 0;
-                completed = true;
-
-                // после фикса перезапускаем скан (чтобы обновить список)
-                await ScanAsync();
-                SetStatus(statusText);
-                AppLogger.Info("registry", "fix.done", "Registry fix completed. Fixed: " + session.FixedCount + ", Skipped: " + session.SkippedCount + ", Failed: " + session.FailedCount + ", Backups: " + session.BackupCount, operationId);
-            }
-            finally
-            {
-                IsBusy = false;
-            }
-
-            if (completed)
-            {
-                if (hasWarnings)
-                    DialogService.ShowWarning(Loc.OperationDoneWithWarnings.Value);
-                else
-                    DialogService.ShowInfo(Loc.OperationDone.Value);
-            }
+                for (var i = 0; i < selected.Length; i++) if (result.Items[i].Status == ItemStatus.Applied) Items.Remove(selected[i]);
+                UpdateAllSelectedState(); UpdateSummary(); FileMaintenanceViewModel.ShowResult(result);
+            });
+        }
+        protected override void OnBusyChanged()
+        {
+            (ScanCommand as RelayCommand)?.RaiseCanExecuteChanged(); (FixCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void UpdateAllSelectedState()
@@ -348,7 +234,7 @@ namespace WashinPC.ViewModels
                 return;
             }
 
-            var all = Items.All(i => i.IsSelected);
+            var all = Items.Where(i => i.CanFix).Any() && Items.Where(i => i.CanFix).All(i => i.IsSelected);
             var none = Items.All(i => !i.IsSelected);
 
             bool? state = all ? true : (none ? (bool?)false : null);
@@ -370,6 +256,7 @@ namespace WashinPC.ViewModels
             if (!string.Equals(settingName, "RegistryExpertMode", StringComparison.Ordinal))
                 return;
 
+            if (!CanStart) return;
             BuildCategories();
             Items.Clear();
             UpdateAllSelectedState();

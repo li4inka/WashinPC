@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using WashinPC.Core.Logging;
 
 namespace WashinPC.Core
 {
@@ -26,6 +27,7 @@ namespace WashinPC.Core
                       ?? asm.GetName().Version?.ToString()
                       ?? "1.0.0";
 
+            Version = Version.Split('+')[0];
             Build = GetBuildTime(asm).ToString("yyyy-MM-dd HH:mm");
             Year = DateTime.Now.Year;
 
@@ -36,8 +38,8 @@ namespace WashinPC.Core
             Channel = "BETA";
             IsBeta = true;
 #else
-            Channel = "RELEASE";
-            IsBeta = false;
+            Channel = "PREVIEW";
+            IsBeta = true;
 #endif
         }
 
@@ -48,7 +50,13 @@ namespace WashinPC.Core
                 if (!string.IsNullOrWhiteSpace(asm.Location) && File.Exists(asm.Location))
                     return File.GetLastWriteTime(asm.Location);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Warn(
+                    "core",
+                    "appinfo.buildtime.read.fail",
+                    "Build time fallback used. exceptionType=" + ex.GetType().Name);
+            }
 
             return DateTime.Now;
         }

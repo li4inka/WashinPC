@@ -1,0 +1,26 @@
+name: Bug report / Ошибка
+description: Report a reproducible problem / Сообщить об ошибке
+body:
+  - type: input
+    id: version
+    attributes:
+      label: WashinPC version and architecture / Версия и архитектура
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version, build and display scale / Windows, сборка и масштаб
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected and actual result / Шаги, ожидаемый и фактический результат
+      description: Do not attach private files, registry exports or unredacted paths.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots / Обезличенные журналы или скриншоты

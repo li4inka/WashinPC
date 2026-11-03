@@ -45,7 +45,7 @@ namespace WashinPC.Core.Logging
             try
             {
                 var effectiveMessage = message ?? string.Empty;
-                if (containsSensitiveData && !Core.AppSettings.VerboseDiagnostics)
+                if (!Core.AppSettings.VerboseDiagnostics)
                     effectiveMessage = MaskSensitive(effectiveMessage);
 
                 lock (Sync)

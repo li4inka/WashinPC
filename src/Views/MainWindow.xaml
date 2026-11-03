@@ -5,8 +5,8 @@
         Title="{Binding AppInfo.Version, StringFormat=WashinPC {0}}"
         Width="1280"
         Height="720"
-        MinWidth="1280"
-        MinHeight="720"
+        MinWidth="900"
+        MinHeight="560"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Brush.AppBackground}"
         UseLayoutRounding="True"
@@ -110,7 +110,20 @@
 
                 <Border Grid.Column="1" Style="{StaticResource ThinSeparator}"/>
 
-                <ContentControl x:Name="ContentHost" Grid.Column="2" Margin="0"/>
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <ScrollViewer x:Name="PageViewport" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <ContentControl x:Name="ContentHost" MinWidth="760" MinHeight="480" IsEnabled="{Binding Ui.IsIdle}"/>
+                    </ScrollViewer>
+                    <DockPanel Grid.Row="1" Margin="24,0,24,12" LastChildFill="True">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="{Binding BackupsLabel}" Command="{Binding BackupsCommand}" Style="{StaticResource SecondaryButton}"/>
+                            <Button Content="{Binding DetailsLabel}" Command="{Binding DetailsCommand}" Style="{StaticResource SecondaryButton}"/>
+                            <Button Content="{Binding Ui.CancelLabel}" Command="{Binding Ui.CancelCommand}" Style="{StaticResource SecondaryButton}" Visibility="{Binding Ui.IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Ui.StatusText}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"/>
+                    </DockPanel>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

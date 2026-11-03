@@ -1,8 +1,11 @@
+using System.Threading;
+using WashinPC.Engines.Operations;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Win32;
+using WashinPC.Core.Logging;
 using WashinPC.Localization;
 
 namespace WashinPC.Engines.Registry
@@ -32,12 +35,13 @@ namespace WashinPC.Engines.Registry
         public string Category { get; set; }
         public string Details { get; set; }
 
+        public bool CanFix { get; set; }
         public Func<RegistryFixContext, RegistryFixResult> Fix { get; set; }
 
         public void RefreshText()
         {
             Category = Localizer.T(CategoryKey);
-            Details = Localizer.T(DetailsKey, DetailsArgs);
+            Details = Localizer.T(DetailsKey, DetailsArgs) + (CanFix ? "" : " — " + Localizer.T("op.diagnostic"));
         }
     }
 
@@ -48,25 +52,42 @@ namespace WashinPC.Engines.Registry
     {
         private readonly List<RegistryIssue> _issues = new List<RegistryIssue>();
 
-        public IList<RegistryIssue> ScanAll()
+        private CancellationToken _token;
+        public IList<RegistryIssue> ScanAll(CancellationToken token = default(CancellationToken), ISet<string> selected = null)
         {
             _issues.Clear();
+            _token = token;
 
-            ScanApplicationPaths();
-            ScanUninstallEntries();
-            ScanSharedDlls();
-            ScanUnusedFileExtensions();
-            ScanActiveXCom();
-            ScanTypeLibraries();
-            ScanApplications();
-            ScanFonts();
-            ScanHelpFiles();
-            ScanInstallerReferences();
-            ScanObsoleteSoftware();
-            ScanStartupEntries();
-            ScanStartMenuOrdering();
-            ScanMuiCache();
-            ScanSoundEvents();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.applications")) ScanApplicationPaths();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.uninstall")) ScanUninstallEntries();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.shared_dlls")) ScanSharedDlls();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.unused_file_ext")) ScanUnusedFileExtensions();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.active_x")) ScanActiveXCom();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.type_libraries")) ScanTypeLibraries();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.applications")) ScanApplications();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.fonts")) ScanFonts();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.help_files")) ScanHelpFiles();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.installer_refs")) ScanInstallerReferences();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.obsolete_software")) ScanObsoleteSoftware();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.startup")) ScanStartupEntries();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.start_menu")) ScanStartMenuOrdering();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.mui_cache")) ScanMuiCache();
+            token.ThrowIfCancellationRequested();
+            if (selected == null || selected.Contains("registry.cat.sound_events")) ScanSoundEvents();
             // ScanWindowsServices() intentionally excluded by default
             // to keep behavior conservative across Win7-Win11.
 
@@ -78,6 +99,24 @@ namespace WashinPC.Engines.Registry
         private static RegistryKey OpenBase(RegistryHive hive, RegistryView view)
             => RegistryKey.OpenBaseKey(hive, view);
 
+        private static void LogScanSectionFailure(
+            string section,
+            Exception ex,
+            RegistryHive? hive = null,
+            RegistryView? view = null)
+        {
+            string scope = string.Empty;
+            if (hive.HasValue && view.HasValue)
+                scope = $" hive={HiveToUi(hive.Value)} view={view.Value}";
+            else if (view.HasValue)
+                scope = $" view={view.Value}";
+
+            AppLogger.Warn(
+                "registry",
+                "scan.section.fail",
+                $"Registry scan section failed: {section}.{scope} exceptionType={ex.GetType().Name}");
+        }
+
         private static string ExpandEnv(string s)
         {
             if (string.IsNullOrWhiteSpace(s)) return s;
@@ -85,23 +124,8 @@ namespace WashinPC.Engines.Registry
             catch { return s; }
         }
 
-        private static bool FileMissing(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return true;
-            path = ExpandEnv(path).Trim().Trim('"');
-            if (!Path.IsPathRooted(path)) return false; // относительные пути не трогаем
-            try { return !File.Exists(path); }
-            catch { return true; }
-        }
-
-        private static bool DirMissing(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return true;
-            path = ExpandEnv(path).Trim().Trim('"');
-            if (!Path.IsPathRooted(path)) return false;
-            try { return !Directory.Exists(path); }
-            catch { return true; }
-        }
+        private static bool FileMissing(string path) => PathSafety.Probe(path) == PathState.Missing;
+        private static bool DirMissing(string path) => PathSafety.Probe(path) == PathState.Missing;
 
         private static string FirstTokenAsPath(string commandLine)
         {
@@ -129,8 +153,30 @@ namespace WashinPC.Engines.Registry
             object[] detailsArgs,
             Func<bool, RegistryFixResult> legacyFix)
         {
+            var canFix = categoryKey == "registry.cat.shared_dlls" || categoryKey == "registry.cat.help_files";
+            var subKey = RegistryFixExecutor.ExtractSubKeyPath(hive, keyPathUi);
+            string snapshot = null;
+            if (canFix) { try { snapshot = RegistryBackup.Capture(hive, view, subKey); } catch { canFix = false; } }
+            Func<bool> validate = () =>
+            {
+                if (!canFix || detailsArgs == null || detailsArgs.Length != 1 || !FileMissing(detailsArgs[0] as string)) return false;
+                try { return snapshot == RegistryBackup.Capture(hive, view, subKey); } catch { return false; }
+            };
+            Func<bool, RegistryFixResult> guardedValueFix = dryRun =>
+            {
+                // Only the two supported value repairs reach this path; never delete a key here.
+                using (var root = OpenBase(hive, view))
+                using (var key = root.OpenSubKey(subKey, !dryRun))
+                {
+                    if (key == null || !key.GetValueNames().Contains(valueName, StringComparer.OrdinalIgnoreCase) || !validate())
+                        return RegistryFixResult.Skipped;
+                    if (!dryRun) key.DeleteValue(valueName, true);
+                    return RegistryFixResult.Fixed;
+                }
+            };
             var issue = new RegistryIssue
             {
+                CanFix = canFix,
                 CategoryKey = categoryKey,
                 DetailsKey = detailsKey,
                 DetailsArgs = detailsArgs,
@@ -139,7 +185,7 @@ namespace WashinPC.Engines.Registry
                 View = view,
                 KeyPath = keyPathUi,
                 ValueName = valueName,
-                Fix = ctx => RegistryFixExecutor.ExecuteLegacyFix(ctx, hive, view, keyPathUi, legacyFix)
+                Fix = ctx => canFix ? RegistryFixExecutor.ExecuteLegacyFix(ctx, hive, view, keyPathUi, guardedValueFix, revalidate: validate) : RegistryFixResult.Skipped
             };
 
             issue.RefreshText();
@@ -168,6 +214,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
@@ -177,6 +224,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var sk in key.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             using (var app = key.OpenSubKey(sk))
                             {
                                 var raw = app?.GetValue(null) as string;
@@ -212,7 +260,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanApplicationPaths", ex, view: view);
+                }
             }
         }
 
@@ -227,6 +279,7 @@ namespace WashinPC.Engines.Registry
             foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
                 foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                 {
+                            _token.ThrowIfCancellationRequested();
                     try
                     {
                         using (var baseKey = OpenBase(hive, view))
@@ -236,6 +289,7 @@ namespace WashinPC.Engines.Registry
 
                             foreach (var sk in key.GetSubKeyNames())
                             {
+                            _token.ThrowIfCancellationRequested();
                                 using (var app = key.OpenSubKey(sk))
                                 {
                                     var name = app?.GetValue("DisplayName") as string;
@@ -282,7 +336,11 @@ namespace WashinPC.Engines.Registry
                             }
                         }
                     }
-                    catch { }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        LogScanSectionFailure("ScanUninstallEntries", ex, hive, view);
+                    }
                 }
         }
 
@@ -296,6 +354,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
@@ -305,12 +364,13 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var valueName in key.GetValueNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             var path = ExpandEnv(valueName);
                             if (!Path.IsPathRooted(path)) continue;
                             if (!FileMissing(path)) continue;
 
                             var count = key.GetValue(valueName);
-                            if (count is int c && c > 1)
+                            if (!(count is int c) || c != 0)
                                 continue;
 
                             AddIssue(
@@ -338,7 +398,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanSharedDlls", ex, view: view);
+                }
             }
         }
 
@@ -350,6 +414,7 @@ namespace WashinPC.Engines.Registry
         {
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.ClassesRoot, view))
@@ -357,6 +422,7 @@ namespace WashinPC.Engines.Registry
                         // HKCR root: iterate only ".ext"
                         foreach (var name in baseKey.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             if (string.IsNullOrWhiteSpace(name) || !name.StartsWith(".")) continue;
                             if (name.Length < 2) continue;
 
@@ -408,7 +474,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanUnusedFileExtensions", ex, view: view);
+                }
             }
         }
 
@@ -422,6 +492,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.ClassesRoot, view))
@@ -431,6 +502,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var guid in clsidRoot.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             if (string.IsNullOrWhiteSpace(guid) || !guid.StartsWith("{") || !guid.EndsWith("}"))
                                 continue;
 
@@ -494,7 +566,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanActiveXCom", ex, view: view);
+                }
             }
         }
 
@@ -508,6 +584,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.ClassesRoot, view))
@@ -517,12 +594,14 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var guid in root.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             using (var lib = root.OpenSubKey(guid))
                             {
                                 if (lib == null) continue;
 
                                 foreach (var ver in lib.GetSubKeyNames())
                                 {
+                            _token.ThrowIfCancellationRequested();
                                     // Typical path: {GUID}\{ver}\0\win32 (default)
                                     var pathKey = $@"{guid}\{ver}\0\win32";
                                     using (var win32 = root.OpenSubKey(pathKey))
@@ -565,7 +644,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanTypeLibraries", ex, view: view);
+                }
             }
         }
 
@@ -579,6 +662,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.ClassesRoot, view))
@@ -588,6 +672,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var appExe in root.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             if (string.IsNullOrWhiteSpace(appExe) || !appExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                                 continue;
 
@@ -628,7 +713,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanApplications", ex, view: view);
+                }
             }
         }
 
@@ -642,6 +731,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
@@ -651,6 +741,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var valueName in key.GetValueNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             var raw = key.GetValue(valueName) as string;
                             if (string.IsNullOrWhiteSpace(raw)) continue;
 
@@ -692,7 +783,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanFonts", ex, view: view);
+                }
             }
         }
 
@@ -710,6 +805,7 @@ namespace WashinPC.Engines.Registry
             foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
                 foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                 {
+                            _token.ThrowIfCancellationRequested();
                     try
                     {
                         using (var baseKey = OpenBase(hive, view))
@@ -719,6 +815,7 @@ namespace WashinPC.Engines.Registry
 
                             foreach (var sk in key.GetSubKeyNames())
                             {
+                            _token.ThrowIfCancellationRequested();
                                 using (var app = key.OpenSubKey(sk))
                                 {
                                     var helpFile = app?.GetValue("HelpFile") as string;
@@ -757,7 +854,11 @@ namespace WashinPC.Engines.Registry
                             }
                         }
                     }
-                    catch { }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        LogScanSectionFailure("ScanHelpFiles", ex, hive, view);
+                    }
                 }
         }
 
@@ -772,6 +873,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
@@ -781,6 +883,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var sid in userData.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             var prodRootPath = $@"{sub}\{sid}\Products";
                             using (var prods = baseKey.OpenSubKey(prodRootPath))
                             {
@@ -788,6 +891,7 @@ namespace WashinPC.Engines.Registry
 
                                 foreach (var prod in prods.GetSubKeyNames())
                                 {
+                            _token.ThrowIfCancellationRequested();
                                     var ipPath = $@"{prodRootPath}\{prod}\InstallProperties";
                                     using (var ip = baseKey.OpenSubKey(ipPath))
                                     {
@@ -830,7 +934,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanInstallerReferences", ex, view: view);
+                }
             }
         }
 
@@ -845,6 +953,7 @@ namespace WashinPC.Engines.Registry
             foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
                 foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                 {
+                            _token.ThrowIfCancellationRequested();
                     try
                     {
                         using (var baseKey = OpenBase(hive, view))
@@ -854,6 +963,7 @@ namespace WashinPC.Engines.Registry
 
                             foreach (var sk in key.GetSubKeyNames())
                             {
+                            _token.ThrowIfCancellationRequested();
                                 using (var app = key.OpenSubKey(sk))
                                 {
                                     var name = app?.GetValue("DisplayName") as string;
@@ -906,7 +1016,11 @@ namespace WashinPC.Engines.Registry
                             }
                         }
                     }
-                    catch { }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        LogScanSectionFailure("ScanObsoleteSoftware", ex, hive, view);
+                    }
                 }
         }
 
@@ -926,8 +1040,10 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 foreach (var rk in runKeys)
                 {
+                            _token.ThrowIfCancellationRequested();
                     try
                     {
                         using (var baseKey = OpenBase(rk.Hive, view))
@@ -937,6 +1053,7 @@ namespace WashinPC.Engines.Registry
 
                             foreach (var valueName in key.GetValueNames())
                             {
+                            _token.ThrowIfCancellationRequested();
                                 var cmd = key.GetValue(valueName) as string;
                                 if (string.IsNullOrWhiteSpace(cmd)) continue;
 
@@ -972,7 +1089,11 @@ namespace WashinPC.Engines.Registry
                             }
                         }
                     }
-                    catch { }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        LogScanSectionFailure("ScanStartupEntries", ex, view: view);
+                    }
                 }
             }
         }
@@ -991,6 +1112,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.CurrentUser, view))
@@ -1004,6 +1126,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var sk in key.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             subCount++;
                             using (var k2 = key.OpenSubKey(sk))
                             {
@@ -1039,7 +1162,11 @@ namespace WashinPC.Engines.Registry
                             });
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanStartMenuOrdering", ex, view: view);
+                }
             }
         }
 
@@ -1055,6 +1182,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.CurrentUser, view))
@@ -1064,6 +1192,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var valueName in key.GetValueNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             // valueName often is path
                             var p = ExpandEnv(valueName);
                             if (!Path.IsPathRooted(p)) continue;
@@ -1094,7 +1223,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanMuiCache", ex, view: view);
+                }
             }
         }
 
@@ -1108,6 +1241,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.CurrentUser, view))
@@ -1118,12 +1252,14 @@ namespace WashinPC.Engines.Registry
                         // iterate: Apps\<app>\<event>\.Current
                         foreach (var app in root.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             using (var appKey = root.OpenSubKey(app))
                             {
                                 if (appKey == null) continue;
 
                                 foreach (var ev in appKey.GetSubKeyNames())
                                 {
+                            _token.ThrowIfCancellationRequested();
                                     var curPath = $@"{sub}\{app}\{ev}\.Current";
                                     using (var cur = baseKey.OpenSubKey(curPath))
                                     {
@@ -1162,7 +1298,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanSoundEvents", ex, view: view);
+                }
             }
         }
 
@@ -1180,6 +1320,7 @@ namespace WashinPC.Engines.Registry
 
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
+                            _token.ThrowIfCancellationRequested();
                 try
                 {
                     using (var baseKey = OpenBase(RegistryHive.LocalMachine, view))
@@ -1189,6 +1330,7 @@ namespace WashinPC.Engines.Registry
 
                         foreach (var svc in root.GetSubKeyNames())
                         {
+                            _token.ThrowIfCancellationRequested();
                             using (var sk = root.OpenSubKey(svc))
                             {
                                 if (sk == null) continue;
@@ -1238,7 +1380,11 @@ namespace WashinPC.Engines.Registry
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogScanSectionFailure("ScanWindowsServices", ex, view: view);
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿# Диагностика и QA-матрица
+# Диагностика и QA-матрица
 
 ## Типовые проблемы
 
@@ -19,12 +19,12 @@
 
 ## Ручная QA-матрица
 
-| Сценарий | Win7 x64 | Win8 x64 | Win10 x64 | Win11 x64 | Критерий |
+| Сценарий | Win7 x64 | Win8.1 x64 | Win10 x64 | Win11 x64 | Критерий |
 |---|---|---|---|---|---|
 | Запуск + проверка прав | Pending | Pending | Pending | Pending | Корректный старт, валидный admin-flow |
 | Cleaner: scan/clean выбранного | Pending | Pending | Pending | Pending | Удаляется только выбранное |
 | Privacy: scan/clean выбранного | Pending | Pending | Pending | Pending | Удаляется только выбранное |
-| Registry: safe-only scan/fix | Pending | Pending | Pending | Pending | Корректные счетчики и повторный скан |
+| Registry: safe-only scan/fix | Pending | Pending | Pending | Pending | Корректные счётчики и сохранённые результаты |
 | Restore point fail flow | Pending | Pending | Pending | Pending | Ветки Continue/Cancel корректны |
 | Context menu: disable/delete/apply | Pending | Pending | Pending | Pending | UI соответствует реальным изменениям |
 | Переключение RU/EN и ключи | Pending | Pending | Pending | Pending | Нет «сырых» локализационных ключей |
@@ -39,3 +39,6 @@
 3. Выполнены требования logging policy.
 
 Иначе: `FAIL`.
+
+
+Локальные проверки и ограничения: [результаты](../validation/README.md). Ошибка копирования блокирует изменение; экспертный режим не превращает диагностические находки в исправляемые.

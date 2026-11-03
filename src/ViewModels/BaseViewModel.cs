@@ -1,4 +1,9 @@
-﻿using System.ComponentModel;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using WashinPC.Core.Logging;
+using WashinPC.Localization;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using WashinPC.Services;
 
@@ -16,8 +21,33 @@ namespace WashinPC.ViewModels
                 if (_isBusy == value) return;
                 _isBusy = value;
                 OnPropertyChanged();
-                AppUiState.Instance.IsBusy = value;
+
                 OnBusyChanged();
+            }
+        }
+
+        protected bool CanStart => !AppUiState.Instance.IsBusy;
+        protected async Task RunOperation(Func<CancellationToken, Task> operation, [CallerMemberName] string name = null)
+        {
+            var ui = AppUiState.Instance;
+            if (!ui.TryBegin()) return;
+            var id = Guid.NewGuid().ToString("N");
+            var subsystem = GetType().Name.Replace("ViewModel", "").ToLowerInvariant();
+            AppLogger.Info(subsystem, name + ".start", "Operation started.", id);
+            IsBusy = true;
+            try { await operation(ui.Token); }
+            catch (OperationCanceledException) { SetStatus(Localizer.T("op.cancelled")); AppLogger.Warn(subsystem, name + ".cancelled", "Operation cancelled.", id); }
+            catch (Exception ex)
+            {
+                AppLogger.Error(subsystem, name + ".failed", "Operation failed. exceptionType=" + ex.GetType().Name, operationId: id);
+                SetStatus(Localizer.T("op.failed"));
+                DialogService.ShowError(Localizer.T("op.failed"));
+            }
+            finally
+            {
+                if (ui.Token.IsCancellationRequested) AppLogger.Warn(subsystem, name + ".cancelled", "Cancellation requested; completed changes retained.", id);
+                AppLogger.Info(subsystem, name + ".done", "Operation finished.", id);
+                IsBusy = false; ui.End();
             }
         }
 

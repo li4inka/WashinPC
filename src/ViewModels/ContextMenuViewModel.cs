@@ -1,3 +1,6 @@
+using System.Threading.Tasks;
+using WashinPC.Core.Mvvm;
+using WashinPC.Engines.Operations;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -178,12 +181,12 @@ namespace WashinPC.ViewModels
         {
             Items = new ObservableCollection<ContextMenuItemViewModel>();
 
-            ScanCommand = new DelegateCommand(Scan, () => !IsBusy);
-            ApplyCommand = new DelegateCommand(Apply, () => !IsBusy && Items.Count > 0);
+            ScanCommand = new RelayCommand(async () => await ScanAsync(), () => CanStart);
+            ApplyCommand = new RelayCommand(async () => await ApplyAsync(), () => CanStart && Items.Count > 0);
 
             Localizer.LanguageChanged += OnLanguageChanged;
 
-            Scan();
+
         }
 
         private void OnLanguageChanged()
@@ -194,92 +197,36 @@ namespace WashinPC.ViewModels
             UpdateSummary();
         }
 
-        private void Scan()
+        private Task ScanAsync() => RunOperation(async token =>
         {
-            var operationId = "ctx-scan-" + Guid.NewGuid().ToString("N");
-            AppLogger.Info("contextmenu", "scan.start", "Starting context menu scan.", operationId);
-
-            try
-            {
-                IsBusy = true;
-                SetStatus(Loc.StatusSearching.Value);
-
-                Items.Clear();
-
-                var entries = ContextMenuScanner.Scan();
-                for (int i = 0; i < entries.Count; i++)
-                    Items.Add(new ContextMenuItemViewModel(entries[i]));
-
-                UpdateSummary();
-                AppLogger.Info("contextmenu", "scan.done", "Context menu scan completed. Items: " + Items.Count, operationId);
-                SetStatus("");
-            }
-            finally
-            {
-                IsBusy = false;
-                RaiseCommands();
-            }
-        }
-
-        private void Apply()
+            SetStatus(Loc.StatusSearching.Value);
+            var entries = await Task.Run(() => ContextMenuScanner.Scan(token));
+            Items.Clear();
+            foreach (var entry in entries) Items.Add(new ContextMenuItemViewModel(entry));
+            UpdateSummary();
+            SetStatus(token.IsCancellationRequested ? Localizer.T("op.cancelled") : Summary);
+        });
+        private async Task ApplyAsync()
         {
-            var operationId = "ctx-apply-" + Guid.NewGuid().ToString("N");
-            AppLogger.Info("contextmenu", "apply.start", "Starting context menu apply.", operationId);
-
-            try
+            var deletes = Items.Where(x => x.Delete && x.IsDeleteSupported).Select(x => x.Entry).ToList();
+            var disables = Items.Where(x => !x.Delete && x.IsToggleSupported && x.Disable && x.Entry.IsEnabled).Select(x => x.Entry).ToList();
+            var enables = Items.Where(x => !x.Delete && x.IsToggleSupported && !x.Disable && !x.Entry.IsEnabled).Select(x => x.Entry).ToList();
+            if (deletes.Count > 0 && DialogService.ShowConfirm(Localizer.T("contextmenu.confirm.delete", deletes.Count)) != DialogResult.Yes) return;
+            await RunOperation(async token =>
             {
-                IsBusy = true;
-                SetStatus(Loc.StatusCleaning.Value);
-
-                var toDelete = Items
-                    .Where(x => x.Delete && x.IsDeleteSupported)
-                    .Select(x => x.Entry)
-                    .ToList();
-
-                if (toDelete.Count > 0)
+                var result = await Task.Run(() =>
                 {
-                    var confirm = DialogService.ShowConfirm(
-                        Localizer.T("contextmenu.confirm.delete", toDelete.Count));
-
-                    if (confirm != DialogResult.Yes)
-                    {
-                        SetStatus(Localizer.T("contextmenu.delete.cancelled"));
-                        AppLogger.Warn("contextmenu", "delete.cancelled", "Context menu delete cancelled by user.", operationId);
-                        return;
-                    }
-                }
-
-                var toDisable = Items
-                    .Where(x => !x.Delete && x.IsToggleSupported && x.Disable && x.Entry.IsEnabled)
-                    .Select(x => x.Entry)
-                    .ToList();
-
-                var toEnable = Items
-                    .Where(x => !x.Delete && x.IsToggleSupported && !x.Disable && !x.Entry.IsEnabled)
-                    .Select(x => x.Entry)
-                    .ToList();
-
-                int changed = 0;
-                changed += ContextMenuApplier.ApplyDisable(toDisable);
-                changed += ContextMenuApplier.ApplyEnable(toEnable);
-                changed += ContextMenuApplier.ApplyDelete(toDelete);
-
-                Items.Clear();
-                var entries = ContextMenuScanner.Scan();
-                for (int i = 0; i < entries.Count; i++)
-                    Items.Add(new ContextMenuItemViewModel(entries[i]));
-
-                UpdateSummary();
-                SetStatus(Localizer.T("contextmenu.applied", changed.ToString()));
-                AppLogger.Info("contextmenu", "apply.done", "Context menu apply completed. Changed: " + changed + ", Deleted: " + toDelete.Count, operationId);
-                SetStatus("");
-            }
-            finally
-            {
-                IsBusy = false;
-                RaiseCommands();
-            }
+                    var total = new OperationResult();
+                    foreach (var part in new[] { ContextMenuApplier.Apply(disables, MenuAction.Disable, token), ContextMenuApplier.Apply(enables, MenuAction.Enable, token), ContextMenuApplier.Apply(deletes, MenuAction.Delete, token) })
+                    { total.Items.AddRange(part.Items); total.Backups.AddRange(part.Backups); total.Cancelled |= part.Cancelled; }
+                    return total;
+                });
+                var applied = new System.Collections.Generic.HashSet<string>(result.Items.Where(x => x.Status == ItemStatus.Applied).Select(x => x.Path));
+                foreach (var item in Items.Where(x => applied.Contains(x.Entry.RelativeKeyPath)).ToArray()) Items.Remove(item);
+                UpdateSummary(); FileMaintenanceViewModel.ShowResult(result);
+            });
         }
+        protected override void OnBusyChanged() { RaiseCommands(); }
 
         private void UpdateSummary()
         {
@@ -288,40 +235,8 @@ namespace WashinPC.ViewModels
 
         private void RaiseCommands()
         {
-            var d1 = ScanCommand as DelegateCommand;
-            if (d1 != null) d1.RaiseCanExecuteChanged();
-
-            var d2 = ApplyCommand as DelegateCommand;
-            if (d2 != null) d2.RaiseCanExecuteChanged();
-        }
-
-        private sealed class DelegateCommand : ICommand
-        {
-            private readonly Action _execute;
-            private readonly Func<bool> _canExecute;
-
-            public DelegateCommand(Action execute, Func<bool> canExecute)
-            {
-                _execute = execute;
-                _canExecute = canExecute;
-            }
-
-            public bool CanExecute(object parameter)
-            {
-                return _canExecute == null ? true : _canExecute();
-            }
-
-            public void Execute(object parameter)
-            {
-                if (_execute != null) _execute();
-            }
-
-            public event EventHandler CanExecuteChanged;
-            public void RaiseCanExecuteChanged()
-            {
-                var h = CanExecuteChanged;
-                if (h != null) h(this, EventArgs.Empty);
-            }
+            (ScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (ApplyCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
     }
 }

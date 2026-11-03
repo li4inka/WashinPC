@@ -5,6 +5,8 @@ namespace WashinPC.Core
 {
     public static class AppSettings
     {
+        internal static bool UseMemoryStore;
+        private static readonly System.Collections.Generic.Dictionary<string, object> Memory = new System.Collections.Generic.Dictionary<string, object>();
         private const string Root = @"Software\WashinPC";
         public static event Action<string> SettingChanged;
 
@@ -40,11 +42,12 @@ namespace WashinPC.Core
 
         private static bool ReadBool(string name, bool def)
         {
+            if (UseMemoryStore) return Memory.ContainsKey(name) ? (bool)Memory[name] : def;
             RegistryKey key = null;
             try
             {
-                key = Registry.CurrentUser.CreateSubKey(Root);
-                object v = key.GetValue(name);
+                key = Registry.CurrentUser.OpenSubKey(Root, false);
+                object v = key?.GetValue(name);
                 if (v == null) return def;
                 return ((int)v) == 1;
             }
@@ -56,6 +59,7 @@ namespace WashinPC.Core
 
         private static void WriteBool(string name, bool value)
         {
+            if (UseMemoryStore) { Memory[name] = value; SettingChanged?.Invoke(name); return; }
             RegistryKey key = null;
             try
             {
@@ -71,11 +75,12 @@ namespace WashinPC.Core
 
         private static string ReadString(string name, string def)
         {
+            if (UseMemoryStore) return Memory.ContainsKey(name) ? (string)Memory[name] : def;
             RegistryKey key = null;
             try
             {
-                key = Registry.CurrentUser.CreateSubKey(Root);
-                object v = key.GetValue(name);
+                key = Registry.CurrentUser.OpenSubKey(Root, false);
+                object v = key?.GetValue(name);
                 return v != null ? v.ToString() : def;
             }
             finally
@@ -86,6 +91,7 @@ namespace WashinPC.Core
 
         private static void WriteString(string name, string value)
         {
+            if (UseMemoryStore) { Memory[name] = value; SettingChanged?.Invoke(name); return; }
             RegistryKey key = null;
             try
             {

@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using WashinPC.Core.Utils;
+using System.Threading;
+using WashinPC.Core.Logging;
+using WashinPC.Engines.Operations;
 
 namespace WashinPC.Engines.Privacy
 {
@@ -12,141 +15,81 @@ namespace WashinPC.Engines.Privacy
         public List<string> Files = new List<string>();
         public long TotalBytes;
     }
-
-    public class PrivacyRule
-    {
-        public string LocalizationKey;
-        public Func<IEnumerable<string>> FilesProvider;
-    }
-
     public sealed class PrivacyEngine
     {
-        private readonly List<PrivacyRule> _rules = new List<PrivacyRule>();
-
-        public PrivacyEngine()
+        internal FileScanPlan LastPlan { get; private set; } = new FileScanPlan();
+        internal static bool DatabaseAvailable(string path, string process, Func<string, bool> running = null)
         {
-            InitRules();
+            try
+            {
+                if (running != null ? running(process) : IsRunning(process)) return false;
+                return new[] { "-wal", "-shm", "-journal" }.All(s => PathSafety.Probe(path + s) == PathState.Missing);
+            }
+            catch { return false; }
         }
-
-        private void InitRules()
+        private static bool IsRunning(string name)
         {
-            _rules.Clear();
-
-            _rules.Add(new PrivacyRule
-            {
-                LocalizationKey = "privacy.chrome",
-                FilesProvider = () => new[]
-                {
-                    Environment.ExpandEnvironmentVariables(
-                        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History"),
-                    Environment.ExpandEnvironmentVariables(
-                        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Cookies")
-                }
-            });
-
-            _rules.Add(new PrivacyRule
-            {
-                LocalizationKey = "privacy.edge",
-                FilesProvider = () => new[]
-                {
-                    Environment.ExpandEnvironmentVariables(
-                        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History"),
-                    Environment.ExpandEnvironmentVariables(
-                        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Cookies")
-                }
-            });
+            var processes = Process.GetProcessesByName(name);
+            try { return processes.Length != 0; }
+            finally { foreach (var process in processes) process.Dispose(); }
         }
-
+        internal FileScanPlan ScanPlan(CancellationToken token, OperationProgress progress = null)
+        {
+            var plan = new FileScanPlan();
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            ScanBrowser(plan, Path.Combine(local, @"Google\Chrome\User Data"), "chrome", token, progress);
+            ScanBrowser(plan, Path.Combine(local, @"Microsoft\Edge\User Data"), "msedge", token, progress);
+            plan.Cancelled = token.IsCancellationRequested; LastPlan = plan;
+            AppLogger.Info("privacy", "scan.done", "Candidates: " + plan.Files.Count + "; skipped: " + plan.Notices.Count);
+            return plan;
+        }
+        internal static void ScanBrowser(FileScanPlan plan, string root, string process, CancellationToken token, OperationProgress progress = null, Func<string, bool> running = null)
+        {
+            if (PathSafety.Probe(root) == PathState.Missing) return;
+            try
+            {
+                PathSafety.NoLinks(root);
+                foreach (var profile in Directory.GetDirectories(root))
+                {
+                    if (token.IsCancellationRequested) break;
+                    var name = Path.GetFileName(profile);
+                    if (name != "Default" && !name.StartsWith("Profile ", StringComparison.Ordinal)) continue;
+                    if (PathSafety.Probe(Path.Combine(profile, "Preferences")) != PathState.Present) continue;
+                    foreach (var relative in new[] { "History", "Cookies", @"Network\Cookies" })
+                    {
+                        if (token.IsCancellationRequested) break;
+                        var path = Path.Combine(profile, relative);
+                        if (!File.Exists(path)) continue;
+                        if (!DatabaseAvailable(path, process, running))
+                        { plan.Notices.Add(new ItemResult { Path = path, Status = ItemStatus.Skipped, Reason = "op.browser_busy" }); continue; }
+                        try
+                        {
+                            using (var file = SafeFile.Open(path, profile, false))
+                            {
+                                if (!file.IsSqlite()) throw new IOException();
+                                plan.Files.Add(new FileCandidate { Path = path, Root = profile, Browser = process,
+                                    Group = "privacy." + (process == "chrome" ? "chrome" : "edge") + (relative == "History" ? ".history" : ".cookies"),
+                                    Bytes = file.Length, Fingerprint = file.Fingerprint });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            plan.Notices.Add(new ItemResult { Path = path, Status = ItemStatus.Skipped, Reason = "op.file_unavailable" });
+                            AppLogger.Warn("privacy", "scan.file.read.fail", "Database skipped. exceptionType=" + ex.GetType().Name);
+                        }
+                        progress?.Report(plan.Files.Count);
+                    }
+                }
+            }
+            catch { plan.Notices.Add(new ItemResult { Path = root, Status = ItemStatus.Skipped, Reason = "op.file_unavailable" }); }
+        }
         public List<PrivacyGroupResult> Scan(out int totalFiles, out long totalBytes)
         {
-            totalFiles = 0;
-            totalBytes = 0;
-
-            var result = new List<PrivacyGroupResult>();
-
-            foreach (var rule in _rules)
-            {
-                var gr = new PrivacyGroupResult
-                {
-                    LocalizationKey = rule.LocalizationKey
-                };
-
-                foreach (var path in rule.FilesProvider())
-                {
-                    var p = Utils.ExpandPath(path);
-                    if (!File.Exists(p))
-                        continue;
-
-                    gr.Files.Add(p);
-                    try
-                    {
-                        gr.TotalBytes += new FileInfo(p).Length;
-                    }
-                    catch { }
-                }
-
-                if (gr.Files.Count > 0)
-                {
-                    result.Add(gr);
-                    totalFiles += gr.Files.Count;
-                    totalBytes += gr.TotalBytes;
-                }
-            }
-
-            return result;
+            var plan = ScanPlan(CancellationToken.None);
+            totalFiles = plan.Files.Count; totalBytes = plan.Files.Sum(x => x.Bytes);
+            return plan.Files.GroupBy(x => x.Group).Select(g => new PrivacyGroupResult { LocalizationKey = g.Key, Files = g.Select(x => x.Path).ToList(), TotalBytes = g.Sum(x => x.Bytes) }).ToList();
         }
-
-        public void CleanSelected(IEnumerable<string> files)
-        {
-            foreach (var f in files)
-            {
-                try
-                {
-                    if (File.Exists(f))
-                        File.Delete(f);
-                }
-                catch
-                {
-                    // как и в Cleaner — не падаем
-                }
-            }
-        }
-
-        public int CleanSelectedGroups(IEnumerable<string> selectedGroupKeys)
-        {
-            var keySet = new HashSet<string>(
-                selectedGroupKeys ?? Enumerable.Empty<string>(),
-                StringComparer.OrdinalIgnoreCase);
-
-            if (keySet.Count == 0)
-                return 0;
-
-            int totalFiles;
-            long totalBytes;
-            var groups = Scan(out totalFiles, out totalBytes);
-
-            int deleted = 0;
-            foreach (var file in groups
-                .Where(g => keySet.Contains(g.LocalizationKey))
-                .SelectMany(g => g.Files)
-                .Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    if (!File.Exists(file))
-                        continue;
-
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                    deleted++;
-                }
-                catch
-                {
-                    // Keep cleaning other files.
-                }
-            }
-
-            return deleted;
-        }
+        public int CleanSelectedGroups(IEnumerable<string> groups)
+            => FileOperations.Delete(LastPlan, groups ?? Enumerable.Empty<string>(), CancellationToken.None).Applied;
     }
 }

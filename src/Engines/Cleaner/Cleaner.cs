@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using WashinPC.Engines.Operations;
 using WashinPC.Core.Utils;
 
 namespace WashinPC.Engines.Cleaner
@@ -21,7 +23,6 @@ namespace WashinPC.Engines.Cleaner
 
     public class CleanerEngine
     {
-        public bool AggressiveMode { get; set; }
         private readonly List<CleaningRule> _rules = new List<CleaningRule>();
 
         public CleanerEngine()
@@ -70,103 +71,40 @@ namespace WashinPC.Engines.Cleaner
             });
         }
 
-        public List<GroupResult> ScanDetailed(out int totalFiles, out long totalBytes)
+        internal FileScanPlan LastPlan { get; private set; } = new FileScanPlan();
+
+        internal FileScanPlan ScanPlan(CancellationToken token, OperationProgress progress = null)
         {
-            totalFiles = 0;
-            totalBytes = 0;
-
-            var result = new List<GroupResult>();
-
+            var plan = new FileScanPlan();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var rule in _rules)
+            foreach (var root in rule.PathsProvider())
             {
-                var gr = new GroupResult
+                if (token.IsCancellationRequested) break;
+                foreach (var path in PathSafety.Walk(root, plan, token))
                 {
-                    LocalizationKey = rule.LocalizationKey
-                };
-
-                foreach (var path in rule.PathsProvider())
-                {
-                    var p = Utils.ExpandPath(path);
-                    if (!Directory.Exists(p))
-                        continue;
-
-                    string[] files;
+                    if (!seen.Add(path)) continue;
                     try
                     {
-                        files = Directory.GetFiles(p, "*", SearchOption.AllDirectories);
+                        using (var file = SafeFile.Open(path, root, false))
+                            plan.Files.Add(new FileCandidate { Path = path, Root = root, Group = rule.LocalizationKey, Fingerprint = file.Fingerprint, Bytes = file.Length });
                     }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    foreach (var file in files)
-                    {
-                        gr.Files.Add(file);
-                        try
-                        {
-                            gr.TotalBytes += new FileInfo(file).Length;
-                        }
-                        catch
-                        {
-                            // Ignore file size errors.
-                        }
-                    }
-                }
-
-                if (gr.Files.Count > 0)
-                {
-                    result.Add(gr);
-                    totalFiles += gr.Files.Count;
-                    totalBytes += gr.TotalBytes;
+                    catch { plan.Notices.Add(new ItemResult { Path = path, Status = ItemStatus.Skipped, Reason = "op.file_unavailable" }); }
+                    progress?.Report(plan.Files.Count);
                 }
             }
-
-            return result;
+            plan.Cancelled = token.IsCancellationRequested;
+            LastPlan = plan;
+            return plan;
         }
-
+        public List<GroupResult> ScanDetailed(out int totalFiles, out long totalBytes)
+        {
+            var plan = ScanPlan(CancellationToken.None);
+            totalFiles = plan.Files.Count; totalBytes = plan.Files.Sum(x => x.Bytes);
+            return plan.Files.GroupBy(x => x.Group).Select(g => new GroupResult { LocalizationKey = g.Key, Files = g.Select(x => x.Path).ToList(), TotalBytes = g.Sum(x => x.Bytes) }).ToList();
+        }
         public int CleanSelectedGroups(IEnumerable<string> selectedGroupKeys)
-        {
-            var keySet = new HashSet<string>(
-                selectedGroupKeys ?? Enumerable.Empty<string>(),
-                StringComparer.OrdinalIgnoreCase);
-
-            if (keySet.Count == 0)
-                return 0;
-
-            int totalFiles;
-            long totalBytes;
-            var groups = ScanDetailed(out totalFiles, out totalBytes);
-
-            var uniqueFiles = groups
-                .Where(g => keySet.Contains(g.LocalizationKey))
-                .SelectMany(g => g.Files)
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-
-            int deleted = 0;
-            foreach (var file in uniqueFiles)
-            {
-                try
-                {
-                    if (!File.Exists(file))
-                        continue;
-
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                    deleted++;
-                }
-                catch
-                {
-                    // Continue deleting other files.
-                }
-            }
-
-            return deleted;
-        }
-
-        public void Clean(out int deleted)
-        {
-            deleted = CleanSelectedGroups(_rules.Select(r => r.LocalizationKey));
-        }
+            => FileOperations.Delete(LastPlan, selectedGroupKeys ?? Enumerable.Empty<string>(), CancellationToken.None).Applied;
+        public void Clean(out int deleted) { deleted = CleanSelectedGroups(_rules.Select(x => x.LocalizationKey)); }
     }
 }

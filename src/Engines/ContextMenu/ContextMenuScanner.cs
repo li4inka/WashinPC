@@ -9,20 +9,27 @@ namespace WashinPC.Engines.ContextMenu
     {
         private const string BlockedKey = @"Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
 
-        public static List<ContextMenuEntry> Scan()
+        public static List<ContextMenuEntry> Scan(System.Threading.CancellationToken token = default(System.Threading.CancellationToken))
         {
             var list = new List<ContextMenuEntry>();
 
-            var blockedHkcu = ReadBlockedSet(WinRegistry.CurrentUser);
-            var blockedHklm = ReadBlockedSet(WinRegistry.LocalMachine);
+            var blockedHkcu = ReadBlockedSet(WinRegistry.CurrentUser, token);
+            var blockedHklm = ReadBlockedSet(WinRegistry.LocalMachine, token);
 
-            ScanScope(list, ContextMenuScope.CurrentUser, WinRegistry.CurrentUser, "HKCU", blockedHkcu, blockedHklm);
-            ScanScope(list, ContextMenuScope.LocalMachine, WinRegistry.LocalMachine, "HKLM", blockedHkcu, blockedHklm);
+            ScanScope(list, ContextMenuScope.CurrentUser, WinRegistry.CurrentUser, "HKCU", blockedHkcu, blockedHklm, token);
+            ScanScope(list, ContextMenuScope.LocalMachine, WinRegistry.LocalMachine, "HKLM", blockedHkcu, blockedHklm, token);
 
-            return list;
+            var verified = new List<ContextMenuEntry>();
+            foreach (var entry in list)
+            {
+                if (token.IsCancellationRequested) break;
+                try { entry.Snapshot = ContextMenuApplier.Snapshot(entry); verified.Add(entry); }
+                catch { Core.Logging.AppLogger.Warn("contextmenu", "scan.unavailable", "Entry unavailable; skipped."); }
+            }
+            return verified;
         }
 
-        private static HashSet<string> ReadBlockedSet(RegistryKey root)
+        private static HashSet<string> ReadBlockedSet(RegistryKey root, System.Threading.CancellationToken token)
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
@@ -32,8 +39,7 @@ namespace WashinPC.Engines.ContextMenu
                     if (key == null)
                         return set;
 
-                    foreach (var name in key.GetValueNames())
-                        set.Add(name);
+                    foreach (var name in key.GetValueNames()) { if (token.IsCancellationRequested) break; set.Add(name); }
                 }
             }
             catch
@@ -49,27 +55,27 @@ namespace WashinPC.Engines.ContextMenu
             RegistryKey root,
             string source,
             HashSet<string> blockedHkcu,
-            HashSet<string> blockedHklm)
+            HashSet<string> blockedHklm, System.Threading.CancellationToken token)
         {
             const string classes = @"Software\Classes";
 
-            ScanTargetShellEx(list, scope, root, source, classes + @"\*\shellex\ContextMenuHandlers", ContextMenuTarget.AnyFile, blockedHkcu, blockedHklm);
-            ScanTargetShellVerbs(list, scope, root, source, classes + @"\*\shell", ContextMenuTarget.AnyFile);
+            ScanTargetShellEx(list, scope, root, source, classes + @"\*\shellex\ContextMenuHandlers", ContextMenuTarget.AnyFile, blockedHkcu, blockedHklm, token);
+            ScanTargetShellVerbs(list, scope, root, source, classes + @"\*\shell", ContextMenuTarget.AnyFile, token);
 
-            ScanTargetShellEx(list, scope, root, source, classes + @"\lnkfile\shellex\ContextMenuHandlers", ContextMenuTarget.Shortcut, blockedHkcu, blockedHklm);
-            ScanTargetShellVerbs(list, scope, root, source, classes + @"\lnkfile\shell", ContextMenuTarget.Shortcut);
+            ScanTargetShellEx(list, scope, root, source, classes + @"\lnkfile\shellex\ContextMenuHandlers", ContextMenuTarget.Shortcut, blockedHkcu, blockedHklm, token);
+            ScanTargetShellVerbs(list, scope, root, source, classes + @"\lnkfile\shell", ContextMenuTarget.Shortcut, token);
 
-            ScanTargetShellEx(list, scope, root, source, classes + @"\Directory\shellex\ContextMenuHandlers", ContextMenuTarget.Folder, blockedHkcu, blockedHklm);
-            ScanTargetShellVerbs(list, scope, root, source, classes + @"\Directory\shell", ContextMenuTarget.Folder);
+            ScanTargetShellEx(list, scope, root, source, classes + @"\Directory\shellex\ContextMenuHandlers", ContextMenuTarget.Folder, blockedHkcu, blockedHklm, token);
+            ScanTargetShellVerbs(list, scope, root, source, classes + @"\Directory\shell", ContextMenuTarget.Folder, token);
 
-            ScanTargetShellEx(list, scope, root, source, classes + @"\Directory\Background\shellex\ContextMenuHandlers", ContextMenuTarget.DirectoryBackground, blockedHkcu, blockedHklm);
-            ScanTargetShellVerbs(list, scope, root, source, classes + @"\Directory\Background\shell", ContextMenuTarget.DirectoryBackground);
+            ScanTargetShellEx(list, scope, root, source, classes + @"\Directory\Background\shellex\ContextMenuHandlers", ContextMenuTarget.DirectoryBackground, blockedHkcu, blockedHklm, token);
+            ScanTargetShellVerbs(list, scope, root, source, classes + @"\Directory\Background\shell", ContextMenuTarget.DirectoryBackground, token);
 
-            ScanTargetShellEx(list, scope, root, source, classes + @"\DesktopBackground\shellex\ContextMenuHandlers", ContextMenuTarget.DesktopBackground, blockedHkcu, blockedHklm);
-            ScanTargetShellVerbs(list, scope, root, source, classes + @"\DesktopBackground\shell", ContextMenuTarget.DesktopBackground);
+            ScanTargetShellEx(list, scope, root, source, classes + @"\DesktopBackground\shellex\ContextMenuHandlers", ContextMenuTarget.DesktopBackground, blockedHkcu, blockedHklm, token);
+            ScanTargetShellVerbs(list, scope, root, source, classes + @"\DesktopBackground\shell", ContextMenuTarget.DesktopBackground, token);
 
-            ScanTargetShellEx(list, scope, root, source, classes + @"\Drive\shellex\ContextMenuHandlers", ContextMenuTarget.Drive, blockedHkcu, blockedHklm);
-            ScanTargetShellVerbs(list, scope, root, source, classes + @"\Drive\shell", ContextMenuTarget.Drive);
+            ScanTargetShellEx(list, scope, root, source, classes + @"\Drive\shellex\ContextMenuHandlers", ContextMenuTarget.Drive, blockedHkcu, blockedHklm, token);
+            ScanTargetShellVerbs(list, scope, root, source, classes + @"\Drive\shell", ContextMenuTarget.Drive, token);
         }
 
         private static void ScanTargetShellEx(
@@ -80,7 +86,7 @@ namespace WashinPC.Engines.ContextMenu
             string handlersKeyPath,
             ContextMenuTarget target,
             HashSet<string> blockedHkcu,
-            HashSet<string> blockedHklm)
+            HashSet<string> blockedHklm, System.Threading.CancellationToken token)
         {
             try
             {
@@ -91,6 +97,7 @@ namespace WashinPC.Engines.ContextMenu
 
                     foreach (var sub in handlersKey.GetSubKeyNames())
                     {
+                        if (token.IsCancellationRequested) break;
                         using (var handler = handlersKey.OpenSubKey(sub, false))
                         {
                             if (handler == null)
@@ -130,7 +137,7 @@ namespace WashinPC.Engines.ContextMenu
             RegistryKey root,
             string source,
             string verbsKeyPath,
-            ContextMenuTarget target)
+            ContextMenuTarget target, System.Threading.CancellationToken token)
         {
             try
             {
@@ -141,6 +148,7 @@ namespace WashinPC.Engines.ContextMenu
 
                     foreach (var verb in verbsKey.GetSubKeyNames())
                     {
+                        if (token.IsCancellationRequested) break;
                         using (var v = verbsKey.OpenSubKey(verb, false))
                         {
                             if (v == null)

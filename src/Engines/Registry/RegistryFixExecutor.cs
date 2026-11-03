@@ -11,7 +11,8 @@ namespace WashinPC.Engines.Registry
             RegistryView view,
             string keyPathUi,
             Func<bool, RegistryFixResult> legacyFix,
-            Func<RegistryHive, RegistryView, string, string> backupExporter = null)
+            Func<RegistryHive, RegistryView, string, string> backupExporter = null,
+            Func<bool> revalidate = null)
         {
             if (context == null || legacyFix == null)
                 return RegistryFixResult.Failed;
@@ -19,7 +20,9 @@ namespace WashinPC.Engines.Registry
             if (!context.AllowMutation)
                 return RegistryFixResult.Skipped;
 
-            if (context.CreateBackup)
+            if (revalidate != null && !revalidate()) return RegistryFixResult.Skipped;
+
+            // Backup is mandatory, even for legacy callers that pass CreateBackup=false.
             {
                 var exporter = backupExporter ?? RegistryBackup.ExportKey;
                 var subKeyPath = ExtractSubKeyPath(hive, keyPathUi);
@@ -33,9 +36,11 @@ namespace WashinPC.Engines.Registry
                 else
                 {
                     context.Logs.Add("Backup failed: " + keyPathUi);
+                    return RegistryFixResult.Failed;
                 }
             }
 
+            if (revalidate != null && !revalidate()) return RegistryFixResult.Skipped;
             var result = legacyFix(false);
             if (result == RegistryFixResult.None)
                 return RegistryFixResult.Skipped;

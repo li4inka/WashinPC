@@ -1,35 +1,9 @@
-﻿# Registry Safety
+# Registry safety
 
-## Scope
+The preview permits only missing zero-count SharedDLL and missing HelpFile repairs. All other categories are diagnostic, even in expert mode. Missing means the immediate parent is readable and the target is confirmed absent; permission errors, missing parents and remote/relative paths are unknown.
 
-This document defines practical safety guarantees for registry operations on Windows 7/8/10/11.
+Each eligible result retains a registry snapshot. Before mutation the app verifies the snapshot and missing target, writes a unique UTF-16 `.reg` backup with the original value types, verifies the saved content, then checks eligibility again. Failure blocks that change. This is not a transactional registry engine; a concurrent writer can still race the final check. Use a quiet test system for qualification.
 
-Absolute mathematical guarantee of "never break OS" is impossible. WashinPC uses conservative controls to reduce risk.
+The backup companion file identifies the hive, key and x86/x64 view and gives a view-specific import command. Manual import may overwrite newer values, does not restore ACLs, and is not conflict-aware recovery. Context-menu toggles include value backups with deletion directives for values that were originally absent. Extension deletion does not clean up shared blocked-list entries.
 
-## Safety Controls
-
-1. Safe-only default profile.
-2. Advanced/Dangerous categories visible but disabled by default.
-3. Restore point attempt before mutation.
-4. Continue/cancel confirmation when restore point fails.
-5. Optional per-key backups during fix.
-6. Session result counters: fixed/failed/skipped.
-
-## Fix Pipeline
-
-1. Preflight selected issues.
-2. Try creating restore point.
-3. If failed: ask user continue/cancel.
-4. Apply fixes with explicit fix context.
-5. Produce session summary and logs.
-
-## Auto-fix Rule
-
-Auto-fix should be restricted to entries with verified broken target references (missing file/path).
-Heuristic or ambiguous cases must be skipped by default.
-
-## Rollback Path
-
-- Use Windows System Restore if restore point exists.
-- Use exported backup keys when available.
-- Re-scan and validate issue reduction after each apply cycle.
+A system restore point is attempted before registry fixes. Its failure requires Continue/Cancel; Continue never disables backup requirements. Old backups stay in place. Review the actual target OS qualification in [validation](../validation/README.md).

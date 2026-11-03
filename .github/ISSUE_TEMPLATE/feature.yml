@@ -1,0 +1,9 @@
+name: Feature request / Предложение
+description: Describe the problem you want solved / Опишите задачу
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and proposed behavior / Задача и предлагаемое поведение
+    validations:
+      required: true
