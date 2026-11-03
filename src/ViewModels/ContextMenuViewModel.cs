@@ -199,12 +199,12 @@ namespace WashinPC.ViewModels
 
         private Task ScanAsync() => RunOperation(async token =>
         {
-            SetStatus(Loc.StatusSearching.Value);
+            SetStatus(() => Loc.StatusSearching.Value);
             var entries = await Task.Run(() => ContextMenuScanner.Scan(token));
             Items.Clear();
             foreach (var entry in entries) Items.Add(new ContextMenuItemViewModel(entry));
             UpdateSummary();
-            SetStatus(token.IsCancellationRequested ? Localizer.T("op.cancelled") : Summary);
+            SetStatus(() => token.IsCancellationRequested ? Localizer.T("op.cancelled") : Localizer.T("contextmenu.summary", Items.Count));
         });
         private async Task ApplyAsync()
         {

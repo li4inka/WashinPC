@@ -26,16 +26,20 @@ namespace WashinPC.Services
             IsBusy = false; _cancellation?.Dispose(); _cancellation = null;
         }
         public void Cancel() { _cancellation?.Cancel(); }
+        private Func<string> _statusProvider;
+        private Func<string> _detailsProvider;
+        internal void SetStatus(Func<string> text) { _statusProvider = text; OnPropertyChanged(nameof(StatusText)); }
+        internal void SetDetails(Func<string> text) { _detailsProvider = text; OnPropertyChanged(nameof(Details)); }
         private string _details = "";
-        public string Details { get => _details; set { _details = value; OnPropertyChanged(); } }
+        public string Details { get => _detailsProvider?.Invoke() ?? _details; set { _detailsProvider = null; _details = value; OnPropertyChanged(); } }
         private string _statusText;
         private bool _isBusy;
         private string _busyText;
 
         public string StatusText
         {
-            get => _statusText;
-            set { _statusText = value; OnPropertyChanged(); }
+            get => _statusProvider?.Invoke() ?? _statusText;
+            set { _statusProvider = null; _statusText = value; OnPropertyChanged(); }
         }
 
         public bool IsBusy
@@ -53,7 +57,12 @@ namespace WashinPC.Services
         private AppUiState()
         {
             CancelCommand = new RelayCommand(Cancel, () => IsBusy);
-            Localizer.LanguageChanged += () => OnPropertyChanged(nameof(CancelLabel));
+            Localizer.LanguageChanged += () =>
+            {
+                OnPropertyChanged(nameof(CancelLabel));
+                OnPropertyChanged(nameof(StatusText));
+                OnPropertyChanged(nameof(Details));
+            };
             StatusText = "";
             BusyText = "";
         }

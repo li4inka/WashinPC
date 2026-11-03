@@ -174,7 +174,7 @@ namespace WashinPC.ViewModels
             var enabled = new HashSet<string>(Categories.Where(x => x.IsAvailable && x.IsChecked).Select(x => x.CategoryKey));
             return RunOperation(async token =>
             {
-                SetStatus(Localizer.T("registry.scanning"));
+                SetStatus(() => Localizer.T("registry.scanning"));
                 var found = await Task.Run(() => _scanner.ScanAll(token, enabled).ToList());
                 Items.Clear();
                 foreach (var issue in found)
@@ -183,7 +183,7 @@ namespace WashinPC.ViewModels
                     item.PropertyChanged += (sender, args) => { if (args.PropertyName == nameof(RegistryIssueView.IsSelected)) { UpdateAllSelectedState(); (FixCommand as RelayCommand)?.RaiseCanExecuteChanged(); } };
                     Items.Add(item);
                 }
-                UpdateAllSelectedState(); UpdateSummary(); SetStatus(SummaryText);
+                UpdateAllSelectedState(); UpdateSummary(); SetStatus(() => Localizer.T("summary.registry", Items.Count));
             });
         }
         private async Task FixAsync()
@@ -192,11 +192,11 @@ namespace WashinPC.ViewModels
             if (selected.Length == 0 || DialogService.ShowConfirm(Loc.RegistryConfirmFix.Value) != DialogResult.Yes) return;
             await RunOperation(async token =>
             {
-                SetStatus(Localizer.T("registry.fixing"));
+                SetStatus(() => Localizer.T("registry.fixing"));
                 string error = "";
                 var restore = await Task.Run(() => SystemRestorePoint.TryCreate("WashinPC Registry Cleanup", out error));
                 AppLogger.Info("registry", restore ? "restorepoint.created" : "restorepoint.failed", restore ? "Restore point created." : "Restore point unavailable.");
-                if (token.IsCancellationRequested) { SetStatus(Localizer.T("op.cancelled")); return; }
+                if (token.IsCancellationRequested) { SetStatus(() => Localizer.T("op.cancelled")); return; }
                 if (!restore && DialogService.ShowConfirm(Localizer.T("registry.restorepoint.failed.confirm", error)) != DialogResult.Yes) return;
                 var context = new RegistryFixContext { AllowMutation = true, CreateBackup = true, HasRestorePoint = restore };
                 var result = await Task.Run(() =>

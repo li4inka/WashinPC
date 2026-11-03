@@ -40,6 +40,59 @@ namespace WashinPC.Tests.Operations
             AppUiState.Instance.Cancel(); release.SetResult(true); await task;
             Assert.IsFalse(AppUiState.Instance.IsBusy); Assert.IsTrue(cleaner.ScanCommand.CanExecute(null));
         }
+        [TestMethod] public void SavedStatusAndOperationDetailsFollowLanguageChanges()
+        {
+            var ui = AppUiState.Instance;
+            var original = Localizer.Current;
+            var changed = new List<string>();
+            System.ComponentModel.PropertyChangedEventHandler handler = (s, e) => changed.Add(e.PropertyName);
+            ui.PropertyChanged += handler;
+            try
+            {
+                Localizer.Current = Lang.RU;
+                ui.SetStatus(() => Localizer.T("contextmenu.summary", 67));
+                foreach (var lang in new[] { Lang.EN, Lang.RU, Lang.EN })
+                {
+                    changed.Clear(); Localizer.Current = lang;
+                    Assert.AreEqual(Localizer.T("contextmenu.summary", 67), ui.StatusText);
+                    CollectionAssert.Contains(changed, "StatusText");
+                }
+                var result = new OperationResult { Cancelled = true };
+                result.Items.Add(new ItemResult { Status = ItemStatus.Skipped, Reason = "op.changed" });
+                result.Backups.Add("fixture.reg");
+                FileMaintenanceViewModel.ShowResult(result);
+                foreach (var lang in new[] { Lang.RU, Lang.EN })
+                {
+                    Localizer.Current = lang;
+                    StringAssert.Contains(ui.StatusText, Localizer.T("op.cancelled"));
+                    StringAssert.Contains(ui.Details, Localizer.T("op.changed"));
+                    StringAssert.Contains(ui.Details, Localizer.T("op.backups_count", 1));
+                    Assert.AreEqual(ui.StatusText.Trim(), ui.StatusText);
+                }
+            }
+            finally { ui.PropertyChanged -= handler; ui.StatusText = ""; ui.Details = ""; Localizer.Current = original; }
+        }
+        [TestMethod] public void TranslationCatalogsHaveMatchingKeysAndFormatArguments()
+        {
+            var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+            var ru = (Dictionary<string, string>)typeof(Localizer).GetField("RU", flags).GetValue(null);
+            var en = (Dictionary<string, string>)typeof(Localizer).GetField("EN", flags).GetValue(null);
+            CollectionAssert.AreEquivalent(ru.Keys.ToArray(), en.Keys.ToArray());
+            foreach (var key in ru.Keys)
+            {
+                foreach (var text in new[] { ru[key], en[key] })
+                {
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(text), key);
+                    Assert.AreEqual(text.Trim(), text, key);
+                    Assert.IsFalse(text.Contains("??"), key);
+                }
+                var pattern = @"\{\d+(?:[^}]*)\}";
+                CollectionAssert.AreEquivalent(
+                    System.Text.RegularExpressions.Regex.Matches(ru[key], pattern).Cast<System.Text.RegularExpressions.Match>().Select(x => x.Value).ToArray(),
+                    System.Text.RegularExpressions.Regex.Matches(en[key], pattern).Cast<System.Text.RegularExpressions.Match>().Select(x => x.Value).ToArray(), key);
+                Assert.IsFalse(en[key].Any(c => c >= '\u0400' && c <= '\u04ff'), key);
+            }
+        }
         [TestMethod] public void AllNewMessagesAreTranslatedAndNotCorrupted()
         {
             var keys = new[] { "op.cancel", "op.cancelled", "op.failed", "op.file_unavailable", "op.browser_busy", "op.changed", "op.applied", "op.backup_failed", "op.backup_or_write_failed", "op.machine_blocked", "op.diagnostic", "op.progress", "op.scan_result", "op.result", "op.backups_count", "op.delete_confirm", "op.privacy_confirm", "op.backups", "op.details", "privacy.chrome.history", "privacy.chrome.cookies", "privacy.edge.history", "privacy.edge.cookies" };

@@ -46,7 +46,7 @@ namespace WashinPC.ViewModels
         }
         private OperationProgress Progress()
         {
-            var progress = new Progress<int>(count => SetStatus(Localizer.T("op.progress", count)));
+            var progress = new Progress<int>(count => SetStatus(() => Localizer.T("op.progress", count)));
             return new OperationProgress(count => ((IProgress<int>)progress).Report(count));
         }
         private void Populate()
@@ -61,11 +61,11 @@ namespace WashinPC.ViewModels
         internal void SetPlan(FileScanPlan plan) { _plan = plan; Populate(); }
         private Task ScanAsync() => RunOperation(async token =>
         {
-            SetStatus(Localizer.T("status.scanning"));
+            SetStatus(() => Localizer.T("status.scanning"));
             var progress = Progress();
             SetPlan(await Task.Run(() => _privacy ? _browser.ScanPlan(token, progress) : _cleaner.ScanPlan(token, progress)));
-            SetStatus(Localizer.T(_plan.Cancelled ? "op.cancelled" : "op.scan_result", _plan.Files.Count, _plan.Notices.Count));
-            if (_plan.Notices.Count > 0) AppUiState.Instance.Details = Describe(_plan.Notices);
+            SetStatus(() => Localizer.T(_plan.Cancelled ? "op.cancelled" : "op.scan_result", _plan.Files.Count, _plan.Notices.Count));
+            if (_plan.Notices.Count > 0) AppUiState.Instance.SetDetails(() => Describe(_plan.Notices));
             else AppUiState.Instance.Details = "";
         });
         private async Task CleanAsync()
@@ -84,9 +84,9 @@ namespace WashinPC.ViewModels
             => string.Join("\n", items.GroupBy(x => x.Reason ?? "op.failed").Select(g => Localizer.T(g.Key) + ": " + g.Count()));
         internal static void ShowResult(OperationResult result)
         {
-            AppUiState.Instance.StatusText = Localizer.T("op.result", result.Applied, result.Skipped, result.Failed, FileSizeFormatter.Format(result.DeletedBytes))
-                + (result.Cancelled ? " " + Localizer.T("op.cancelled") : "");
-            AppUiState.Instance.Details = Describe(result.Items) + (result.Backups.Count > 0 ? "\n" + Localizer.T("op.backups_count", result.Backups.Count) : "");
+            AppUiState.Instance.SetStatus(() => Localizer.T("op.result", result.Applied, result.Skipped, result.Failed, FileSizeFormatter.Format(result.DeletedBytes))
+                + (result.Cancelled ? " " + Localizer.T("op.cancelled") : ""));
+            AppUiState.Instance.SetDetails(() => Describe(result.Items) + (result.Backups.Count > 0 ? "\n" + Localizer.T("op.backups_count", result.Backups.Count) : ""));
             Core.Logging.AppLogger.Info("operation", "done", "Applied=" + result.Applied + "; skipped=" + result.Skipped + "; failed=" + result.Failed + "; bytes=" + result.DeletedBytes);
         }
         private async Task RecycleAsync()
@@ -96,7 +96,7 @@ namespace WashinPC.ViewModels
             {
                 if (token.IsCancellationRequested) return;
                 var ok = await Task.Run(() => Native.EmptyRecycleBinQuiet());
-                SetStatus(ok ? Loc.CleanerRecycleDone.Value : Loc.CleanerRecycleFailed.Value);
+                SetStatus(() => ok ? Loc.CleanerRecycleDone.Value : Loc.CleanerRecycleFailed.Value);
             });
         }
     }

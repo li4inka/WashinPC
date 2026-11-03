@@ -36,11 +36,11 @@ namespace WashinPC.ViewModels
             AppLogger.Info(subsystem, name + ".start", "Operation started.", id);
             IsBusy = true;
             try { await operation(ui.Token); }
-            catch (OperationCanceledException) { SetStatus(Localizer.T("op.cancelled")); AppLogger.Warn(subsystem, name + ".cancelled", "Operation cancelled.", id); }
+            catch (OperationCanceledException) { SetStatus(() => Localizer.T("op.cancelled")); AppLogger.Warn(subsystem, name + ".cancelled", "Operation cancelled.", id); }
             catch (Exception ex)
             {
                 AppLogger.Error(subsystem, name + ".failed", "Operation failed. exceptionType=" + ex.GetType().Name, operationId: id);
-                SetStatus(Localizer.T("op.failed"));
+                SetStatus(() => Localizer.T("op.failed"));
                 DialogService.ShowError(Localizer.T("op.failed"));
             }
             finally
@@ -57,9 +57,9 @@ namespace WashinPC.ViewModels
                 AppUiState.Instance.BusyText = text;
         }
 
-        protected void SetStatus(string text)
+        protected void SetStatus(Func<string> text)
         {
-            AppUiState.Instance.StatusText = text ?? "";
+            AppUiState.Instance.SetStatus(text);
         }
 
         protected virtual void OnBusyChanged() { }
